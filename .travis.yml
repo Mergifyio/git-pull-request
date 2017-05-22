@@ -1,0 +1,12 @@
+language: python
+cache:
+  - pip
+python:
+    - 2.7
+    - 3.5
+    - 3.6
+before_install:
+install:
+    # The install requirements in travis virtualenv that will be cached
+  - pip install tox-travis .[test]
+script: tox
