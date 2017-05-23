@@ -32,10 +32,10 @@ def _run_shell_command(cmd, output=None, raise_on_error=True):
         output = subprocess.PIPE
 
     LOG.debug("running %s", cmd)
-    cmd = subprocess.Popen(cmd, stdout=output, stderr=output)
-    out = cmd.communicate()
-    if raise_on_error and cmd.returncode:
-        raise RuntimeError("%s returned %d" % (cmd, cmd.returncode))
+    sub = subprocess.Popen(cmd, stdout=output, stderr=output)
+    out = sub.communicate()
+    if raise_on_error and sub.returncode:
+        raise RuntimeError("%s returned %d" % (cmd, sub.returncode))
 
     if out[0]:
         return out[0].decode()
