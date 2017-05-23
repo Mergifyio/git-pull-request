@@ -136,6 +136,8 @@ def main():
         )
         return 35
 
+    LOG.debug("Found GitHub user: `%s' password: <redacted>", user)
+
     g = github.Github(user, password)
     g_user = g.get_user()
     repo_to_fork = g.get_user(user_to_fork).get_repo(reponame_to_fork)
