@@ -26,7 +26,7 @@ class TestRunShellCommand(unittest.TestCase):
 
     def test_output(self):
         output = gpr._run_shell_command(["echo", "arf"], output=True)
-        self.assertEqual("arf\n", output)
+        self.assertEqual("arf", output)
 
     def test_error(self):
         self.assertRaises(

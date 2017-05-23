@@ -39,7 +39,7 @@ def _run_shell_command(cmd, output=None, raise_on_error=True):
         raise RuntimeError("%s returned %d" % (cmd, sub.returncode))
 
     if out[0]:
-        return out[0].decode()
+        return out[0].strip().decode()
 
 
 def get_login_password(site_name="github.com", netrc_file="~/.netrc"):
@@ -59,13 +59,13 @@ def git_remote_matching_url(url):
 def git_remote_url(remote="origin"):
     return _run_shell_command(
         ["git", "config", "--get", "remote." + remote + ".url"],
-        output=True).strip()
+        output=True)
 
 
 def git_get_branch_name():
     branch = _run_shell_command(
         ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-        output=True).strip()
+        output=True)
     if branch == "HEAD":
         raise RuntimeError("Unable to determine current branch")
     return branch
@@ -74,13 +74,13 @@ def git_get_branch_name():
 def git_get_remote_for_branch(branch):
     return _run_shell_command(
         ["git", "config", "--get", "branch." + branch + ".remote"],
-        output=True, raise_on_error=False).strip()
+        output=True, raise_on_error=False)
 
 
 def git_get_remote_branch_for_branch(branch):
     branch = _run_shell_command(
         ["git", "config", "--get", "branch." + branch + ".merge"],
-        output=True, raise_on_error=False).strip()
+        output=True, raise_on_error=False)
     if branch.startswith("refs/heads/"):
         return branch[11:]
     return branch
