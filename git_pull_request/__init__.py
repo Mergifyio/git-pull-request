@@ -12,6 +12,7 @@
 # implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import argparse
 import logging
 import netrc
 import os
@@ -96,7 +97,7 @@ def get_github_user_repo_from_url(url):
     return user, repo[:-4]
 
 
-def main():
+def git_pull_request(remote_branch=None):
     branch = git_get_branch_name()
     if not branch:
         LOG.critical("Unable to find current branch")
@@ -153,7 +154,6 @@ def main():
         LOG.debug("Found forked repository already in remote as `%s'",
                   remote_to_push)
     else:
-        # TODO(jd) this name could be an option
         remote_to_push = "github"
         _run_shell_command(
             ["git", "remote", "add", remote_to_push, repo_forked.clone_url])
@@ -169,8 +169,8 @@ def main():
         for pull in pulls:
             LOG.info("Pull-request already exists at: " + pull.html_url)
     else:
-        # TODO(jd): allow to specify remote branch
-        remote_branch = git_get_remote_branch_for_branch(branch) or "master"
+        remote_branch = (remote_branch or
+                         git_get_remote_branch_for_branch(branch))
         # Create a pull request
         editor = os.getenv("EDITOR")
         if not editor:
@@ -207,8 +207,7 @@ def main():
         LOG.info("Pull-request created: " + pull.html_url)
 
 
-if __name__ == '__main__':
-
+def main():
     daiquiri.setup(
         outputs=(
             daiquiri.output.Stream(
@@ -218,4 +217,17 @@ if __name__ == '__main__':
         level=logging.INFO,
     )
 
+    parser = argparse.ArgumentParser(
+        description='Send GitHub pull-request.'
+    )
+    parser.add_argument("--remote-branch",
+                        help="Remote branch to send a pull-request to. "
+                        "Default is auto-detected from .git/config.")
+
+    args = parser.parse_args()
+
+    git_pull_request(remote_branch=args.remote_branch)
+
+
+if __name__ == '__main__':
     sys.exit(main())
