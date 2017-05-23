@@ -97,7 +97,7 @@ def get_github_user_repo_from_url(url):
     return user, repo[:-4]
 
 
-def git_pull_request(remote_branch=None):
+def git_pull_request(remote_branch=None, title=None):
     branch = git_get_branch_name()
     if not branch:
         LOG.critical("Unable to find current branch")
@@ -185,11 +185,12 @@ def git_pull_request(remote_branch=None):
              remote + "/" + remote_branch + ".." + branch],
             output=True)
 
-        summary_entries = summary_log.split("\n")
-        if len(summary_entries) == 1:
-            title = summary_entries[0]
-        else:
-            title = "Merge request for " + branch
+        if title is None:
+            summary_entries = summary_log.split("\n")
+            if len(summary_entries) == 1:
+                title = summary_entries[0]
+            else:
+                title = "Merge request for " + branch
 
         fd, bodyfilename = tempfile.mkstemp()
         with open(bodyfilename, "w") as body:
@@ -231,10 +232,13 @@ def main():
     parser.add_argument("--remote-branch",
                         help="Remote branch to send a pull-request to. "
                         "Default is auto-detected from .git/config.")
+    parser.add_argument("--title",
+                        help="Title of the pull request.")
 
     args = parser.parse_args()
 
-    git_pull_request(remote_branch=args.remote_branch)
+    git_pull_request(remote_branch=args.remote_branch,
+                     title=args.title)
 
 
 if __name__ == '__main__':
