@@ -217,18 +217,12 @@ def git_pull_request(remote_branch=None, title=None):
 
 
 def main():
-    daiquiri.setup(
-        outputs=(
-            daiquiri.output.Stream(
-                sys.stdout,
-                formatter=logging.Formatter(
-                    fmt="%(message)s")),),
-        level=logging.INFO,
-    )
-
     parser = argparse.ArgumentParser(
         description='Send GitHub pull-request.'
     )
+    parser.add_argument("--debug",
+                        action='store_true',
+                        help="Enabled debugging.")
     parser.add_argument("--remote-branch",
                         help="Remote branch to send a pull-request to. "
                         "Default is auto-detected from .git/config.")
@@ -236,6 +230,15 @@ def main():
                         help="Title of the pull request.")
 
     args = parser.parse_args()
+
+    daiquiri.setup(
+        outputs=(
+            daiquiri.output.Stream(
+                sys.stdout,
+                formatter=logging.Formatter(
+                    fmt="%(message)s")),),
+        level=logging.DEBUG if args.debug else logging.INFO,
+    )
 
     git_pull_request(remote_branch=args.remote_branch,
                      title=args.title)
