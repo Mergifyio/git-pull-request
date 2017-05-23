@@ -77,9 +77,12 @@ def git_get_remote_for_branch(branch):
 
 
 def git_get_remote_branch_for_branch(branch):
-    return _run_shell_command(
+    branch = _run_shell_command(
         ["git", "config", "--get", "branch." + branch + ".merge"],
         output=True, raise_on_error=False).strip()
+    if branch.startswith("refs/heads/"):
+        return branch[11:]
+    return branch
 
 
 def get_github_user_repo_from_url(url):

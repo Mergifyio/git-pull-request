@@ -56,7 +56,7 @@ class TestGitCommand(fixtures.TestWithFixtures):
         gpr._run_shell_command(["git", "remote", "add", "origin",
                                 "https://github.com/jd/git-pull-request.git"])
         gpr._run_shell_command(["git", "config", "branch.master.merge",
-                                "master"])
+                                "refs/heads/master"])
         gpr._run_shell_command(["git", "config", "branch.master.remote",
                                 "origin"])
 
