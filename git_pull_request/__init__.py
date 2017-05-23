@@ -24,16 +24,6 @@ import github
 from six.moves.urllib import parse as urlparse
 
 
-daiquiri.setup(
-    outputs=(
-        daiquiri.output.Stream(
-            sys.stdout,
-            formatter=logging.Formatter(
-                fmt="%(message)s")),),
-    level=logging.INFO,
-)
-
-
 LOG = daiquiri.getLogger("git-pull-request")
 
 
@@ -213,4 +203,14 @@ def main():
 
 
 if __name__ == '__main__':
+
+    daiquiri.setup(
+        outputs=(
+            daiquiri.output.Stream(
+                sys.stdout,
+                formatter=logging.Formatter(
+                    fmt="%(message)s")),),
+        level=logging.INFO,
+    )
+
     sys.exit(main())
