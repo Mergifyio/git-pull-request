@@ -93,16 +93,6 @@ def get_github_user_repo_from_url(url):
     return user, repo[:-4]
 
 
-try:
-    user, password = get_login_password()
-except KeyError:
-    raise RuntimeError(
-        "Unable to find your GitHub crediential.\n"
-        "Make sure you have a line like this in your ~/.netrc file:\n"
-        "machine github.com login <login> password <pwd>"
-    )
-
-
 def main():
     branch = git_get_branch_name()
     if not branch:
@@ -135,6 +125,16 @@ def main():
     user_to_fork, reponame_to_fork = get_github_user_repo_from_url(remote_url)
     LOG.debug("GitHub user and repository to fork: %s/%s",
               user_to_fork, reponame_to_fork)
+
+    try:
+        user, password = get_login_password()
+    except KeyError:
+        LOG.critical(
+            "Unable to find your GitHub crediential.\n"
+            "Make sure you have a line like this in your ~/.netrc file:\n"
+            "machine github.com login <login> password <pwd>"
+        )
+        return 35
 
     g = github.Github(user, password)
     g_user = g.get_user()
