@@ -178,15 +178,23 @@ def git_pull_request(remote_branch=None):
                 "$EDITOR is unset, you will not be able to edit the "
                 "pull-request message")
             editor = "cat"
+
+        summary_log = _run_shell_command(
+            ["git", "log",
+             "--format=%s",
+             remote + "/" + remote_branch + ".." + branch],
+            output=True)
+
+        summary_entries = summary_log.split("\n")
+        if len(summary_entries) == 1:
+            title = summary_entries[0]
+        else:
+            title = "Merge request for " + branch
+
         fd, bodyfilename = tempfile.mkstemp()
-        title = "Merge request for " + branch
         with open(bodyfilename, "w") as body:
             body.write(title + "\n\n")
-            body.write(_run_shell_command(
-                ["git", "log",
-                 "--format=%s",
-                 remote + "/" + remote_branch + ".." + branch],
-                output=True))
+            body.write(summary_log + "\n")
         os.system(editor + " " + bodyfilename)
         with open(bodyfilename, "r") as body:
             content = body.read().strip()
