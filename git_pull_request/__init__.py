@@ -140,7 +140,7 @@ def git_pull_request(remote=None, remote_branch=None, title=None):
                 branch)
             return 20
 
-    LOG.debug("Remote name for branch `%s' is `%s'", branch, remote)
+    LOG.debug("Remote for branch `%s' is `%s'", branch, remote)
 
     remote_url = git_remote_url(remote)
     if not remote_url:
