@@ -13,8 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import argparse
+import itertools
 import logging
 import netrc
+import operator
 import os
 import subprocess
 import sys
@@ -95,6 +97,16 @@ def get_github_user_repo_from_url(url):
     except (ValueError, IndexError):
         raise RuntimeError("Unable to parse GitHub repository: `%s'" % url)
     return user, repo[:-4]
+
+
+def parse_pr_message(message):
+    message_by_line = message.split("\n")
+    if len(message) == 0:
+        return None, None
+    title = message_by_line[0]
+    body = "\n".join(itertools.dropwhile(
+        operator.not_, message_by_line[1:]))
+    return title, body
 
 
 def git_pull_request(remote_branch=None, title=None):
@@ -201,11 +213,8 @@ def git_pull_request(remote_branch=None, title=None):
             content = body.read().strip()
         os.unlink(bodyfilename)
 
-        content_by_line = content.split("\n")
-        if len(content_by_line) > 0:
-            title = content_by_line[0]
-            body = "\n".join(content_by_line[1:])
-        else:
+        title, body = parse_pr_message(content)
+        if title == None:
             LOG.warning("Pull-request message is empty, aborting")
             return 40
 

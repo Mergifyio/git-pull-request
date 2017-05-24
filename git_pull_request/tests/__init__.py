@@ -74,3 +74,16 @@ class TestGitCommand(fixtures.TestWithFixtures):
         self.assertEqual(
             "master",
             gpr.git_get_remote_branch_for_branch("master"))
+
+
+class TestMessageParsing(unittest.TestCase):
+    def test_only_title(self):
+        self.assertEqual(
+            ("foobar", "something\nawesome"),
+            gpr.parse_pr_message("foobar\nsomething\nawesome"))
+        self.assertEqual(
+            ("foobar", "something\nawesome\n"),
+            gpr.parse_pr_message("foobar\nsomething\nawesome\n"))
+        self.assertEqual(
+            ("foobar", "something\nawesome\n"),
+            gpr.parse_pr_message("foobar\n\nsomething\nawesome\n"))
