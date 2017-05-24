@@ -255,8 +255,8 @@ def main():
         level=logging.DEBUG if args.debug else logging.INFO,
     )
 
-    git_pull_request(remote_branch=args.remote_branch,
-                     title=args.title)
+    return git_pull_request(remote_branch=args.remote_branch,
+                            title=args.title)
 
 
 if __name__ == '__main__':
