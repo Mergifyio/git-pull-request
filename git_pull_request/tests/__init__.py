@@ -87,3 +87,14 @@ class TestMessageParsing(unittest.TestCase):
         self.assertEqual(
             ("foobar", "something\nawesome\n"),
             gpr.parse_pr_message("foobar\n\nsomething\nawesome\n"))
+
+    def test_get_title_from_git_log(self):
+        self.assertEqual(
+            "Pull request for master",
+            gpr.get_title_from_git_log("foobar\nfoobaz", "master"))
+        self.assertEqual(
+            "only one commit",
+            gpr.get_title_from_git_log("only one commit", "master"))
+        self.assertEqual(
+            "only one commit",
+            gpr.get_title_from_git_log("only one commit\n", "master"))

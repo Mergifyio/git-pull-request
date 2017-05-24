@@ -99,6 +99,10 @@ def get_github_user_repo_from_url(url):
     return user, repo[:-4]
 
 
+def split_and_remove_empty_lines(s):
+    return filter(operator.truth, s.split("\n"))
+
+
 def parse_pr_message(message):
     message_by_line = message.split("\n")
     if len(message) == 0:
@@ -107,6 +111,13 @@ def parse_pr_message(message):
     body = "\n".join(itertools.dropwhile(
         operator.not_, message_by_line[1:]))
     return title, body
+
+
+def get_title_from_git_log(log, branch):
+    summary_entries = list(split_and_remove_empty_lines(log))
+    if len(summary_entries) == 1:
+        return summary_entries[0]
+    return "Pull request for " + branch
 
 
 def git_pull_request(remote_branch=None, title=None):
@@ -197,12 +208,7 @@ def git_pull_request(remote_branch=None, title=None):
              remote + "/" + remote_branch + ".." + branch],
             output=True)
 
-        if title is None:
-            summary_entries = summary_log.split("\n")
-            if len(summary_entries) == 1:
-                title = summary_entries[0]
-            else:
-                title = "Merge request for " + branch
+        title = title or get_title_from_git_log(summary_log, branch)
 
         fd, bodyfilename = tempfile.mkstemp()
         with open(bodyfilename, "w") as body:
