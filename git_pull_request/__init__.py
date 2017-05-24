@@ -120,7 +120,7 @@ def get_title_from_git_log(log, branch):
     return "Pull request for " + branch
 
 
-def git_pull_request(remote_branch=None, title=None):
+def git_pull_request(remote=None, remote_branch=None, title=None):
     branch = git_get_branch_name()
     if not branch:
         LOG.critical("Unable to find current branch")
@@ -128,7 +128,7 @@ def git_pull_request(remote_branch=None, title=None):
 
     LOG.debug("Local branch name is `%s'", branch)
 
-    remote = git_get_remote_for_branch(branch)
+    remote = remote or git_get_remote_for_branch(branch)
     if not remote:
         LOG.debug(
             "Unable to find remote for local branch `%s', using master",
@@ -241,6 +241,9 @@ def main():
     parser.add_argument("--debug",
                         action='store_true',
                         help="Enabled debugging.")
+    parser.add_argument("--remote",
+                        help="Remote to send a pull-request to. "
+                        "Default is auto-detected from .git/config.")
     parser.add_argument("--remote-branch",
                         help="Remote branch to send a pull-request to. "
                         "Default is auto-detected from .git/config.")
@@ -258,7 +261,8 @@ def main():
         level=logging.DEBUG if args.debug else logging.INFO,
     )
 
-    return git_pull_request(remote_branch=args.remote_branch,
+    return git_pull_request(remote=args.remote,
+                            remote_branch=args.remote_branch,
                             title=args.title)
 
 
