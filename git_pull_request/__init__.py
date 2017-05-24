@@ -223,7 +223,7 @@ def git_pull_request(remote=None, remote_branch=None, title=None):
         os.unlink(bodyfilename)
 
         title, body = parse_pr_message(content)
-        if title == None:
+        if title is None:
             LOG.critical("Pull-request message is empty, aborting")
             return 40
 
