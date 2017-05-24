@@ -190,7 +190,10 @@ def git_pull_request(remote_branch=None, title=None):
     pulls = list(repo_to_fork.get_pulls(head=user + ":" + branch))
     if pulls:
         for pull in pulls:
-            LOG.info("Pull-request already exists at: " + pull.html_url)
+            LOG.info("Pull-request already exists at: %s", pull.html_url)
+            if title:
+                pull.edit(title=title)
+                LOG.info("Update pull-request title to: %s", title)
     else:
         remote_branch = (remote_branch or
                          git_get_remote_branch_for_branch(branch))
