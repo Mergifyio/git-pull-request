@@ -215,7 +215,7 @@ def git_pull_request(remote_branch=None, title=None):
 
         title, body = parse_pr_message(content)
         if title == None:
-            LOG.warning("Pull-request message is empty, aborting")
+            LOG.critical("Pull-request message is empty, aborting")
             return 40
 
         pull = repo_to_fork.create_pull(base=remote_branch,
