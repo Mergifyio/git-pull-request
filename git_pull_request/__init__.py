@@ -90,12 +90,12 @@ def git_get_remote_branch_for_branch(branch):
 
 def get_github_user_repo_from_url(url):
     parsed = urlparse.urlparse(url)
-    if parsed.netloc != "github.com":
-        raise ValueError("The remote URL does not point to GitHub: `%s'" % url)
-    try:
-        user, repo = parsed.path[1:].split("/", 2)
-    except (ValueError, IndexError):
-        raise RuntimeError("Unable to parse GitHub repository: `%s'" % url)
+    if parsed.netloc == '':
+        # Probably ssh
+        host, sep, path = parsed.path.partition(":")
+    else:
+        path = parsed.path[1:]
+    user, repo = path.split("/", 1)
     return user, repo[:-4]
 
 
