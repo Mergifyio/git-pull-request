@@ -40,7 +40,7 @@ def _run_shell_command(cmd, output=None, raise_on_error=True):
     if raise_on_error and sub.returncode:
         raise RuntimeError("%s returned %d" % (cmd, sub.returncode))
 
-    if out[0]:
+    if out[0] is not None:
         return out[0].strip().decode()
 
 
