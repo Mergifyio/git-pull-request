@@ -128,17 +128,22 @@ def git_pull_request(remote=None, remote_branch=None, title=None):
 
     LOG.debug("Local branch name is `%s'", branch)
 
-    remote = remote or git_get_remote_for_branch(branch)
+    remote_branch = (remote_branch or
+                     git_get_remote_branch_for_branch(branch))
+
+    if not remote_branch:
+        remote_branch = "master"
+        LOG.info(
+            "No remote branch configured for local branch `%s', using `%s'\n"
+            "Use the --remote-branch option to override.",
+            branch, remote_branch)
+
+    remote = remote or git_get_remote_for_branch(remote_branch)
     if not remote:
-        LOG.debug(
-            "Unable to find remote for local branch `%s', using master",
-            branch)
-        remote = git_get_remote_for_branch("master")
-        if not remote:
-            LOG.critical(
-                "Unable to find remote for local branch `master'",
-                branch)
-            return 20
+        LOG.critical(
+            "Unable to find remote for local branch `%s'",
+            remote_branch)
+        return 20
 
     LOG.debug("Remote for branch `%s' is `%s'", branch, remote)
 
@@ -187,7 +192,8 @@ def git_pull_request(remote=None, remote_branch=None, title=None):
 
     _run_shell_command(["git", "push", "-f", remote_to_push, branch])
 
-    pulls = list(repo_to_fork.get_pulls(head=user + ":" + branch))
+    pulls = list(repo_to_fork.get_pulls(base=remote_branch,
+                                        head=user + ":" + branch))
     if pulls:
         for pull in pulls:
             LOG.info("Pull-request already exists at: %s", pull.html_url)
@@ -195,8 +201,6 @@ def git_pull_request(remote=None, remote_branch=None, title=None):
                 pull.edit(title=title)
                 LOG.info("Update pull-request title to: %s", title)
     else:
-        remote_branch = (remote_branch or
-                         git_get_remote_branch_for_branch(branch))
         # Create a pull request
         editor = os.getenv("EDITOR")
         if not editor:
