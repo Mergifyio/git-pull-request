@@ -120,7 +120,7 @@ def get_title_from_git_log(log, branch):
     return "Pull request for " + branch
 
 
-def git_pull_request(remote=None, remote_branch=None, title=None):
+def git_pull_request(target_remote=None, target_branch=None, title=None):
     branch = git_get_branch_name()
     if not branch:
         LOG.critical("Unable to find current branch")
@@ -128,33 +128,35 @@ def git_pull_request(remote=None, remote_branch=None, title=None):
 
     LOG.debug("Local branch name is `%s'", branch)
 
-    remote_branch = (remote_branch or
+    target_branch = (target_branch or
                      git_get_remote_branch_for_branch(branch))
 
-    if not remote_branch:
-        remote_branch = "master"
+    if not target_branch:
+        target_branch = "master"
         LOG.info(
-            "No remote branch configured for local branch `%s', using `%s'\n"
-            "Use the --remote-branch option to override.",
-            branch, remote_branch)
+            "No target branch configured for local branch `%s', using `%s'.\n"
+            "Use the --target-branch option to override.",
+            branch, target_branch)
 
-    remote = remote or git_get_remote_for_branch(remote_branch)
-    if not remote:
+    target_remote = target_remote or git_get_remote_for_branch(target_branch)
+    if not target_remote:
         LOG.critical(
-            "Unable to find remote for local branch `%s'",
-            remote_branch)
+            "Unable to find target remote for target branch `%s'",
+            target_branch)
         return 20
 
-    LOG.debug("Remote for branch `%s' is `%s'", branch, remote)
+    LOG.debug("Target remote for branch `%s' is `%s'",
+              target_branch, target_remote)
 
-    remote_url = git_remote_url(remote)
-    if not remote_url:
-        LOG.critical("Unable to find remote URL for remote `%s'", remote)
+    target_url = git_remote_url(target_remote)
+    if not target_url:
+        LOG.critical("Unable to find remote URL for remote `%s'",
+                     target_remote)
         return 30
 
-    LOG.debug("Remote URL for remote `%s' is `%s'", remote, remote_url)
+    LOG.debug("Remote URL for remote `%s' is `%s'", target_remote, target_url)
 
-    user_to_fork, reponame_to_fork = get_github_user_repo_from_url(remote_url)
+    user_to_fork, reponame_to_fork = get_github_user_repo_from_url(target_url)
     LOG.debug("GitHub user and repository to fork: %s/%s",
               user_to_fork, reponame_to_fork)
 
@@ -192,7 +194,7 @@ def git_pull_request(remote=None, remote_branch=None, title=None):
 
     _run_shell_command(["git", "push", "-f", remote_to_push, branch])
 
-    pulls = list(repo_to_fork.get_pulls(base=remote_branch,
+    pulls = list(repo_to_fork.get_pulls(base=target_branch,
                                         head=user + ":" + branch))
     if pulls:
         for pull in pulls:
@@ -212,7 +214,7 @@ def git_pull_request(remote=None, remote_branch=None, title=None):
         summary_log = _run_shell_command(
             ["git", "log",
              "--format=%s",
-             remote + "/" + remote_branch + ".." + branch],
+             target_remote + "/" + target_branch + ".." + branch],
             output=True)
 
         title = title or get_title_from_git_log(summary_log, branch)
@@ -231,7 +233,7 @@ def git_pull_request(remote=None, remote_branch=None, title=None):
             LOG.critical("Pull-request message is empty, aborting")
             return 40
 
-        pull = repo_to_fork.create_pull(base=remote_branch,
+        pull = repo_to_fork.create_pull(base=target_branch,
                                         head=user + ":" + branch,
                                         title=title,
                                         body=body)
@@ -245,11 +247,11 @@ def main():
     parser.add_argument("--debug",
                         action='store_true',
                         help="Enabled debugging.")
-    parser.add_argument("--remote",
+    parser.add_argument("--target-remote",
                         help="Remote to send a pull-request to. "
                         "Default is auto-detected from .git/config.")
-    parser.add_argument("--remote-branch",
-                        help="Remote branch to send a pull-request to. "
+    parser.add_argument("--target-branch",
+                        help="Branch to send a pull-request to. "
                         "Default is auto-detected from .git/config.")
     parser.add_argument("--title",
                         help="Title of the pull request.")
@@ -265,8 +267,8 @@ def main():
         level=logging.DEBUG if args.debug else logging.INFO,
     )
 
-    return git_pull_request(remote=args.remote,
-                            remote_branch=args.remote_branch,
+    return git_pull_request(target_remote=args.target_remote,
+                            target_branch=args.target_branch,
                             title=args.title)
 
 
