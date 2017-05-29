@@ -162,7 +162,7 @@ def git_pull_request(remote=None, remote_branch=None, title=None):
         user, password = get_login_password()
     except KeyError:
         LOG.critical(
-            "Unable to find your GitHub crediential.\n"
+            "Unable to find your GitHub credentials.\n"
             "Make sure you have a line like this in your ~/.netrc file:\n"
             "machine github.com login <login> password <pwd>"
         )
