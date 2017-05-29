@@ -120,7 +120,8 @@ def get_title_from_git_log(log, branch):
     return "Pull request for " + branch
 
 
-def git_pull_request(target_remote=None, target_branch=None, title=None):
+def git_pull_request(target_remote=None, target_branch=None,
+                     title=None, message=None):
     branch = git_get_branch_name()
     if not branch:
         LOG.critical("Unable to find current branch")
@@ -200,8 +201,8 @@ def git_pull_request(target_remote=None, target_branch=None, title=None):
         for pull in pulls:
             LOG.info("Pull-request already exists at: %s", pull.html_url)
             if title:
-                pull.edit(title=title)
-                LOG.info("Update pull-request title to: %s", title)
+                pull.edit(title=title, body=message)
+                LOG.info("Update pull-request title and message")
     else:
         # Create a pull request
         editor = os.getenv("EDITOR")
@@ -211,24 +212,25 @@ def git_pull_request(target_remote=None, target_branch=None, title=None):
                 "pull-request message")
             editor = "cat"
 
-        summary_log = _run_shell_command(
-            ["git", "log",
-             "--format=%s",
-             target_remote + "/" + target_branch + ".." + branch],
-            output=True)
+        message = (message or
+                   _run_shell_command(
+                       ["git", "log",
+                        "--format=%s",
+                        target_remote + "/" + target_branch + ".." + branch],
+                       output=True))
 
-        title = title or get_title_from_git_log(summary_log, branch)
+        title = title or get_title_from_git_log(message, branch)
 
         fd, bodyfilename = tempfile.mkstemp()
         with open(bodyfilename, "w") as body:
             body.write(title + "\n\n")
-            body.write(summary_log + "\n")
+            body.write(message + "\n")
         os.system(editor + " " + bodyfilename)
         with open(bodyfilename, "r") as body:
             content = body.read().strip()
         os.unlink(bodyfilename)
 
-        title, body = parse_pr_message(content)
+        title, message = parse_pr_message(content)
         if title is None:
             LOG.critical("Pull-request message is empty, aborting")
             return 40
@@ -236,7 +238,7 @@ def git_pull_request(target_remote=None, target_branch=None, title=None):
         pull = repo_to_fork.create_pull(base=target_branch,
                                         head=user + ":" + branch,
                                         title=title,
-                                        body=body)
+                                        body=message)
         LOG.info("Pull-request created: " + pull.html_url)
 
 
@@ -255,6 +257,8 @@ def main():
                         "Default is auto-detected from .git/config.")
     parser.add_argument("--title",
                         help="Title of the pull request.")
+    parser.add_argument("--message", "-m",
+                        help="Message of the pull request.")
 
     args = parser.parse_args()
 
@@ -269,7 +273,8 @@ def main():
 
     return git_pull_request(target_remote=args.target_remote,
                             target_branch=args.target_branch,
-                            title=args.title)
+                            title=args.title,
+                            message=args.message)
 
 
 if __name__ == '__main__':
