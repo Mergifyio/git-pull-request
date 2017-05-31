@@ -121,7 +121,8 @@ def get_title_from_git_log(log, branch):
 
 
 def git_pull_request(target_remote=None, target_branch=None,
-                     title=None, message=None):
+                     title=None, message=None,
+                     comment_on_update=True):
     branch = git_get_branch_name()
     if not branch:
         LOG.critical("Unable to find current branch")
@@ -203,6 +204,14 @@ def git_pull_request(target_remote=None, target_branch=None,
             if title:
                 pull.edit(title=title, body=message)
                 LOG.info("Update pull-request title and message")
+        if comment_on_update:
+            branch_sha = _run_shell_command(
+                ["git", "rev-parse", branch], output=True)
+            msg = "Pull-request updated, HEAD is now %s" % branch_sha
+            # FIXME(jd) we should be able to comment directly on a PR without
+            # getting it as an issue but pygithub does not allow that yet
+            repo_to_fork.get_issue(pull.number).create_comment(msg)
+            LOG.info("Commented: \"%s\"", msg)
     else:
         # Create a pull request
         editor = os.getenv("EDITOR")
@@ -259,6 +268,12 @@ def main():
                         help="Title of the pull request.")
     parser.add_argument("--message", "-m",
                         help="Message of the pull request.")
+    parser.add_argument(
+        "--no-comment-on-update",
+        action="store_true",
+        default=False,
+        help="Do not post a comment stating the pull-request has been updated."
+    )
 
     args = parser.parse_args()
 
@@ -271,10 +286,13 @@ def main():
         level=logging.DEBUG if args.debug else logging.INFO,
     )
 
-    return git_pull_request(target_remote=args.target_remote,
-                            target_branch=args.target_branch,
-                            title=args.title,
-                            message=args.message)
+    return git_pull_request(
+        target_remote=args.target_remote,
+        target_branch=args.target_branch,
+        title=args.title,
+        message=args.message,
+        comment_on_update=not args.no_comment_on_update,
+    )
 
 
 if __name__ == '__main__':
