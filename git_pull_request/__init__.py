@@ -96,7 +96,7 @@ def get_github_user_repo_from_url(url):
     else:
         path = parsed.path[1:]
     user, repo = path.split("/", 1)
-    return user, repo[:-4]
+    return user, repo[:-4] if repo.endswith('.git') else repo
 
 
 def split_and_remove_empty_lines(s):

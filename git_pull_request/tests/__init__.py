@@ -55,6 +55,14 @@ class TestStuff(unittest.TestCase):
             ("jd", "git-pull-request"),
             gpr.get_github_user_repo_from_url(
                 "https://example.com/jd/git-pull-request.git"))
+        self.assertEqual(
+            ("jd", "git-pull-request"),
+            gpr.get_github_user_repo_from_url(
+                "git@github.com:jd/git-pull-request"))
+        self.assertEqual(
+            ("jd", "git-pull-request"),
+            gpr.get_github_user_repo_from_url(
+                "https://example.com/jd/git-pull-request"))
 
 
 class TestGitCommand(fixtures.TestWithFixtures):
