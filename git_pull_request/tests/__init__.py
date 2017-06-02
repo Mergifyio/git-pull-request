@@ -76,6 +76,9 @@ class TestGitCommand(fixtures.TestWithFixtures):
                                 "refs/heads/master"])
         gpr._run_shell_command(["git", "config", "branch.master.remote",
                                 "origin"])
+        gpr._run_shell_command(["git", "config", "user.name", "nobody"])
+        gpr._run_shell_command(["git", "config", "user.email",
+                                "nobody@example.com"])
 
     def test_get_remote_for_branch(self):
         self.assertEqual("origin",
@@ -92,6 +95,25 @@ class TestGitCommand(fixtures.TestWithFixtures):
             "master",
             gpr.git_get_remote_branch_for_branch("master"))
 
+    def test_git_get_title_and_message(self):
+        gpr._run_shell_command(["git", "commit", "--allow-empty",
+                                "--no-edit", "-q",
+                                "-m", "Import"])
+        gpr._run_shell_command(["git", "commit", "--allow-empty",
+                                "--no-edit", "-q",
+                                "-m", "First message"])
+        gpr._run_shell_command(["git", "commit", "--allow-empty",
+                                "--no-edit", "-q",
+                                "-m", "Last message\n\nLong body, "
+                                "but not so long\n"])
+
+        self.assertEqual(("Last message", "Long body, but not so long"),
+                         gpr.git_get_title_and_message("master^", "master"))
+
+        self.assertEqual(("Pull request for master",
+                          "Last message\nFirst message"),
+                         gpr.git_get_title_and_message("master^^", "master"))
+
 
 class TestMessageParsing(unittest.TestCase):
     def test_only_title(self):
@@ -104,14 +126,3 @@ class TestMessageParsing(unittest.TestCase):
         self.assertEqual(
             ("foobar", "something\nawesome\n"),
             gpr.parse_pr_message("foobar\n\nsomething\nawesome\n"))
-
-    def test_get_title_from_git_log(self):
-        self.assertEqual(
-            "Pull request for master",
-            gpr.get_title_from_git_log("foobar\nfoobaz", "master"))
-        self.assertEqual(
-            "only one commit",
-            gpr.get_title_from_git_log("only one commit", "master"))
-        self.assertEqual(
-            "only one commit",
-            gpr.get_title_from_git_log("only one commit\n", "master"))

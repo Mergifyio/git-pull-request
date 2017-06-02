@@ -113,11 +113,29 @@ def parse_pr_message(message):
     return title, body
 
 
-def get_title_from_git_log(log, branch):
-    summary_entries = list(split_and_remove_empty_lines(log))
-    if len(summary_entries) == 1:
-        return summary_entries[0]
-    return "Pull request for " + branch
+def git_get_commit_body(commit):
+    return _run_shell_command(
+        ["git", "show", "-q", "--format=%b", commit],
+        output=True)
+
+
+def git_get_log_titles(begin, end):
+    log = _run_shell_command(
+        ["git", "log", "--format=%s", "%s..%s" % (begin, end)],
+        output=True)
+    return list(split_and_remove_empty_lines(log))
+
+
+def git_get_title_and_message(begin, end):
+    titles = git_get_log_titles(begin, end)
+
+    if len(titles) == 1:
+        title = titles[0]
+        message = git_get_commit_body(end)
+    else:
+        title = "Pull request for " + end
+        message = "\n".join(titles)
+    return (title, message)
 
 
 def git_pull_request(target_remote=None, target_branch=None,
@@ -221,14 +239,11 @@ def git_pull_request(target_remote=None, target_branch=None,
                 "pull-request message")
             editor = "cat"
 
-        message = (message or
-                   _run_shell_command(
-                       ["git", "log",
-                        "--format=%s",
-                        target_remote + "/" + target_branch + ".." + branch],
-                       output=True))
+        git_title, git_message = git_get_title_and_message(
+            "%s/%s" % (target_remote, target_branch), branch)
 
-        title = title or get_title_from_git_log(message, branch)
+        title = title or git_title
+        message = message or git_message
 
         fd, bodyfilename = tempfile.mkstemp()
         with open(bodyfilename, "w") as body:
