@@ -321,8 +321,8 @@ def main():
         outputs=(
             daiquiri.output.Stream(
                 sys.stdout,
-                formatter=logging.Formatter(
-                    fmt="%(message)s")),),
+                formatter=daiquiri.formatter.ColorFormatter(
+                    fmt="%(color)s%(message)s%(color_stop)s")),),
         level=logging.DEBUG if args.debug else logging.INFO,
     )
 
