@@ -240,10 +240,10 @@ def git_pull_request(target_remote=None, target_branch=None,
                                         head=user + ":" + branch))
     if pulls:
         for pull in pulls:
-            LOG.info("Pull-request already exists at:\n  %s", pull.html_url)
+            LOG.info("Pull-request updated:\n  %s", pull.html_url)
             if title:
                 pull.edit(title=title, body=message)
-                LOG.info("Update pull-request title and message")
+                LOG.debug("Updated pull-request title and message")
         if comment_on_update:
             branch_sha = _run_shell_command(
                 ["git", "rev-parse", branch], output=True)
