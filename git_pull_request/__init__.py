@@ -140,7 +140,8 @@ def git_get_title_and_message(begin, end):
 
 def git_pull_request(target_remote=None, target_branch=None,
                      title=None, message=None,
-                     comment_on_update=True):
+                     comment_on_update=True,
+                     rebase=True):
     branch = git_get_branch_name()
     if not branch:
         LOG.critical("Unable to find current branch")
@@ -208,6 +209,27 @@ def git_pull_request(target_remote=None, target_branch=None,
         _run_shell_command(
             ["git", "remote", "add", remote_to_push, repo_forked.clone_url])
         LOG.info("Added forked repository as remote `%s'", remote_to_push)
+
+    if rebase:
+        _run_shell_command(["git", "remote", "update", target_remote])
+
+        LOG.info("Rebasing branch `%s' on branch `%s/%s'",
+                 branch, target_remote, target_branch)
+        try:
+            _run_shell_command(
+                ["git", "rebase",
+                 "remotes/%s/%s" % (target_remote, target_branch),
+                 branch])
+        except RuntimeError:
+            LOG.error(
+                "It is likely that your change has a merge conflict. "
+                "You may resolve it in the working tree now as "
+                "described above and then run `git pull-request' again, or "
+                "if you do not want to resolve it yet (note that the "
+                "change can not merge until the conflict is resolved) "
+                "you may run `git rebase --abort' then `git pull-request -R' "
+                "to upload the change without rebasing.")
+            return 37
 
     LOG.info("Force-pushing branch `%s' to remote `%s'",
              branch, remote_to_push)
@@ -283,6 +305,9 @@ def main():
                         help="Title of the pull request.")
     parser.add_argument("--message", "-m",
                         help="Message of the pull request.")
+    parser.add_argument("--no-rebase", "-R",
+                        action="store_true",
+                        help="Don't rebase branch before pushing.")
     parser.add_argument(
         "--no-comment-on-update",
         action="store_true",
@@ -307,6 +332,7 @@ def main():
         title=args.title,
         message=args.message,
         comment_on_update=not args.no_comment_on_update,
+        rebase=not args.no_rebase,
     )
 
 
