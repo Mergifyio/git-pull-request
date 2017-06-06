@@ -240,7 +240,7 @@ def git_pull_request(target_remote=None, target_branch=None,
                                         head=user + ":" + branch))
     if pulls:
         for pull in pulls:
-            LOG.info("Pull-request already exists at: %s", pull.html_url)
+            LOG.info("Pull-request already exists at:\n  %s", pull.html_url)
             if title:
                 pull.edit(title=title, body=message)
                 LOG.info("Update pull-request title and message")
