@@ -251,7 +251,7 @@ def git_pull_request(target_remote=None, target_branch=None,
             # FIXME(jd) we should be able to comment directly on a PR without
             # getting it as an issue but pygithub does not allow that yet
             repo_to_fork.get_issue(pull.number).create_comment(msg)
-            LOG.info("Commented: \"%s\"", msg)
+            LOG.debug("Commented: \"%s\"", msg)
     else:
         # Create a pull request
         editor = os.getenv("EDITOR")
