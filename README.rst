@@ -22,9 +22,14 @@ Use the standard Python installation method::
 
 Usage
 =====
-You need to write your GitHub credentials into your `~/.netrc file`::
+You need to write your GitHub credentials into your `~/.netrc file`. In case you
+have 2FA enabled, make sure to replace your password by a
+`Personal access token <https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/>`_::
 
   machine github.com login jd password f00b4r
+
+Note: since credentials are stored in plain text, you should encrypt your `$HOME`
+directory to improve security.
 
 Once you made a bunch of commits into a branch, just type::
 
