@@ -241,9 +241,15 @@ def git_pull_request(target_remote=None, target_branch=None,
     if pulls:
         for pull in pulls:
             LOG.info("Pull-request updated:\n  %s", pull.html_url)
-            if title:
+            if title and message:
                 pull.edit(title=title, body=message)
                 LOG.debug("Updated pull-request title and message")
+            elif title:
+                pull.edit(title=title)
+                LOG.debug("Updated pull-request title")
+            elif message:
+                pull.edit(body=message)
+                LOG.debug("Updated pull-request message")
         if comment_on_update:
             branch_sha = _run_shell_command(
                 ["git", "rev-parse", branch], output=True)
