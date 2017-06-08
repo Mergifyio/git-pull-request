@@ -21,10 +21,10 @@ import os
 import subprocess
 import sys
 import tempfile
+from urllib import parse
 
 import daiquiri
 import github
-from six.moves.urllib import parse as urlparse
 
 
 LOG = daiquiri.getLogger("git-pull-request")
@@ -89,7 +89,7 @@ def git_get_remote_branch_for_branch(branch):
 
 
 def get_github_user_repo_from_url(url):
-    parsed = urlparse.urlparse(url)
+    parsed = parse.urlparse(url)
     if parsed.netloc == '':
         # Probably ssh
         host, sep, path = parsed.path.partition(":")
