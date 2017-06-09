@@ -16,6 +16,7 @@ import os
 import unittest
 
 import fixtures
+import github
 
 import git_pull_request as gpr
 
@@ -126,3 +127,25 @@ class TestMessageParsing(unittest.TestCase):
         self.assertEqual(
             ("foobar", "something\nawesome\n"),
             gpr.parse_pr_message("foobar\n\nsomething\nawesome\n"))
+
+
+class TestExceptionFormatting(unittest.TestCase):
+    def test_issue_12(self):
+        e = github.GithubException(422, {
+            u'documentation_url':
+            u'https://developer.github.com/v3/pulls/#create-a-pull-request',
+            u'message':
+            u'Validation Failed',
+            u'errors': [{
+                u'message': u'No commits between issues-221 and issues-221',
+                u'code': u'custom',
+                u'resource': u'PullRequest'}
+            ]}
+        )
+        self.assertEqual(
+            "Unable to create pull request: Validation Failed (422)\n"
+            "No commits between issues-221 and issues-221\n"
+            "Check "
+            "https://developer.github.com/v3/pulls/#create-a-pull-request "
+            "for more information.",
+            gpr._format_github_exception("create pull request", e))

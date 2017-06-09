@@ -287,11 +287,30 @@ def git_pull_request(target_remote=None, target_branch=None,
             LOG.critical("Pull-request message is empty, aborting")
             return 40
 
-        pull = repo_to_fork.create_pull(base=target_branch,
-                                        head=user + ":" + branch,
-                                        title=title,
-                                        body=message)
-        LOG.info("Pull-request created: " + pull.html_url)
+        try:
+            pull = repo_to_fork.create_pull(base=target_branch,
+                                            head=user + ":" + branch,
+                                            title=title,
+                                            body=message)
+        except github.GithubException as e:
+            LOG.critical(
+                _format_github_exception("create pull request", e)
+            )
+            return 50
+        else:
+            LOG.info("Pull-request created: " + pull.html_url)
+
+
+def _format_github_exception(action, exc):
+        url = exc.data.get("documentation_url", "GitHub documentation")
+        errors_msg = "\n".join(map(operator.itemgetter("message"),
+                                   exc.data.get("errors", [])))
+        return (
+            "Unable to %s: %s (%s)\n"
+            "%s\n"
+            "Check %s for more information." %
+            (action, exc.data.get('message'), exc.status, errors_msg, url)
+        )
 
 
 def main():
