@@ -108,10 +108,10 @@ class TestGitCommand(fixtures.TestWithFixtures):
                                 "-m", "Last message\n\nLong body, "
                                 "but not so long\n"])
 
-        self.assertEqual(("Last message", "Long body, but not so long"),
+        self.assertEqual((1, "Last message", "Long body, but not so long"),
                          gpr.git_get_title_and_message("master^", "master"))
 
-        self.assertEqual(("Pull request for master",
+        self.assertEqual((2, "Pull request for master",
                           "Last message\nFirst message"),
                          gpr.git_get_title_and_message("master^^", "master"))
 

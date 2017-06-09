@@ -127,6 +127,12 @@ def git_get_log_titles(begin, end):
 
 
 def git_get_title_and_message(begin, end):
+    """Get title and message summary for patches between 2 commits.
+
+    :param begin: first commit to look at
+    :param end: last commit to look at
+    :return: number of commits, title, message
+    """
     titles = git_get_log_titles(begin, end)
 
     if len(titles) == 1:
@@ -135,13 +141,14 @@ def git_get_title_and_message(begin, end):
     else:
         title = "Pull request for " + end
         message = "\n".join(titles)
-    return (title, message)
+    return (len(titles), title, message)
 
 
 def git_pull_request(target_remote=None, target_branch=None,
                      title=None, message=None,
                      comment_on_update=True,
-                     rebase=True):
+                     rebase=True,
+                     force_editor=False):
     branch = git_get_branch_name()
     if not branch:
         LOG.critical("Unable to find current branch")
@@ -260,29 +267,33 @@ def git_pull_request(target_remote=None, target_branch=None,
             LOG.debug("Commented: \"%s\"", msg)
     else:
         # Create a pull request
-        editor = os.getenv("EDITOR")
-        if not editor:
-            LOG.warning(
-                "$EDITOR is unset, you will not be able to edit the "
-                "pull-request message")
-            editor = "cat"
-
-        git_title, git_message = git_get_title_and_message(
+        nb_of_commits, git_title, git_message = git_get_title_and_message(
             "%s/%s" % (target_remote, target_branch), branch)
 
-        title = title or git_title
-        message = message or git_message
+        # Do not run an editor if there's only one commit or if both title and
+        # message were specified
+        if nb_of_commits != 1 or (not title and not message) or force_editor:
+            editor = os.getenv("EDITOR")
+            if not editor:
+                LOG.warning(
+                    "$EDITOR is unset, you will not be able to edit the "
+                    "pull-request message")
+                editor = "cat"
 
-        fd, bodyfilename = tempfile.mkstemp()
-        with open(bodyfilename, "w") as body:
-            body.write(title + "\n\n")
-            body.write(message + "\n")
-        os.system(editor + " " + bodyfilename)
-        with open(bodyfilename, "r") as body:
-            content = body.read().strip()
-        os.unlink(bodyfilename)
+            fd, bodyfilename = tempfile.mkstemp()
+            with open(bodyfilename, "w") as body:
+                body.write(title or git_title + "\n\n")
+                body.write(message or git_message + "\n")
+            os.system(editor + " " + bodyfilename)
+            with open(bodyfilename, "r") as body:
+                content = body.read().strip()
+            os.unlink(bodyfilename)
 
-        title, message = parse_pr_message(content)
+            title, message = parse_pr_message(content)
+        else:
+            title = title or git_title
+            message = message or git_message
+
         if title is None:
             LOG.critical("Pull-request message is empty, aborting")
             return 40
@@ -334,6 +345,11 @@ def main():
                         action="store_true",
                         help="Don't rebase branch before pushing.")
     parser.add_argument(
+        "--force-editor",
+        action="store_true",
+        default=False,
+        help="Force editor to run to edit pull-request message.")
+    parser.add_argument(
         "--no-comment-on-update",
         action="store_true",
         default=False,
@@ -358,6 +374,7 @@ def main():
         message=args.message,
         comment_on_update=not args.no_comment_on_update,
         rebase=not args.no_rebase,
+        force_editor=args.force_editor,
     )
 
 
