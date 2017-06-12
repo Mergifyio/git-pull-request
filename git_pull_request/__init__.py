@@ -282,8 +282,8 @@ def git_pull_request(target_remote=None, target_branch=None,
 
             fd, bodyfilename = tempfile.mkstemp()
             with open(bodyfilename, "w") as body:
-                body.write(title or git_title + "\n\n")
-                body.write(message or git_message + "\n")
+                body.write((title or git_title) + "\n\n")
+                body.write((message or git_message) + "\n")
             os.system(editor + " " + bodyfilename)
             with open(bodyfilename, "r") as body:
                 content = body.read().strip()
