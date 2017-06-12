@@ -146,6 +146,7 @@ def git_get_title_and_message(begin, end):
 
 def git_pull_request(target_remote=None, target_branch=None,
                      title=None, message=None,
+                     comment=None,
                      comment_on_update=True,
                      rebase=True,
                      force_editor=False):
@@ -258,13 +259,14 @@ def git_pull_request(target_remote=None, target_branch=None,
                 pull.edit(body=message)
                 LOG.debug("Updated pull-request message")
         if comment_on_update:
-            branch_sha = _run_shell_command(
-                ["git", "rev-parse", branch], output=True)
-            msg = "Pull-request updated, HEAD is now %s" % branch_sha
+            if not comment:
+                branch_sha = _run_shell_command(
+                    ["git", "rev-parse", branch], output=True)
+                comment = "Pull-request updated, HEAD is now %s" % branch_sha
             # FIXME(jd) we should be able to comment directly on a PR without
             # getting it as an issue but pygithub does not allow that yet
-            repo_to_fork.get_issue(pull.number).create_comment(msg)
-            LOG.debug("Commented: \"%s\"", msg)
+            repo_to_fork.get_issue(pull.number).create_comment(comment)
+            LOG.debug("Commented: \"%s\"", comment)
     else:
         # Create a pull request
         nb_of_commits, git_title, git_message = git_get_title_and_message(
@@ -358,6 +360,10 @@ def main():
         default=False,
         help="Do not post a comment stating the pull-request has been updated."
     )
+    parser.add_argument(
+        "--comment", "-C",
+        help="Comment to publish when updating the pull-request"
+    )
 
     args = parser.parse_args()
 
@@ -376,6 +382,7 @@ def main():
         title=args.title,
         message=args.message,
         comment_on_update=not args.no_comment_on_update,
+        comment=args.comment,
         rebase=not args.no_rebase,
         force_editor=args.force_editor,
     )
