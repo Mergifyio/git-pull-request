@@ -272,7 +272,10 @@ def git_pull_request(target_remote=None, target_branch=None,
 
         # Do not run an editor if there's only one commit or if both title and
         # message were specified
-        if nb_of_commits != 1 or (not title and not message) or force_editor:
+        if (force_editor or
+           ((not title or not message) and nb_of_commits > 1) or
+           (((title and not message) or
+             (message and not title)) and nb_of_commits == 1)):
             editor = os.getenv("EDITOR")
             if not editor:
                 LOG.warning(
