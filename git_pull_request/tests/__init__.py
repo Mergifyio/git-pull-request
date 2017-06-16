@@ -41,28 +41,28 @@ class TestRunShellCommand(unittest.TestCase):
 class TestStuff(unittest.TestCase):
     def test_get_github_user_repo_from_url(self):
         self.assertEqual(
-            ("jd", "git-pull-request"),
-            gpr.get_github_user_repo_from_url(
+            ("github.com", "jd", "git-pull-request"),
+            gpr.get_github_hostname_user_repo_from_url(
                 "https://github.com/jd/git-pull-request.git"))
         self.assertEqual(
-            ("jd", "git-pull-request"),
-            gpr.get_github_user_repo_from_url(
+            ("github.com", "jd", "git-pull-request"),
+            gpr.get_github_hostname_user_repo_from_url(
                 "git@github.com:jd/git-pull-request.git"))
         self.assertEqual(
-            ("jd", "git-pull-request"),
-            gpr.get_github_user_repo_from_url(
+            ("github.com", "jd", "git-pull-request"),
+            gpr.get_github_hostname_user_repo_from_url(
                 "git://github.com/jd/git-pull-request.git"))
         self.assertEqual(
-            ("jd", "git-pull-request"),
-            gpr.get_github_user_repo_from_url(
+            ("example.com", "jd", "git-pull-request"),
+            gpr.get_github_hostname_user_repo_from_url(
                 "https://example.com/jd/git-pull-request.git"))
         self.assertEqual(
-            ("jd", "git-pull-request"),
-            gpr.get_github_user_repo_from_url(
+            ("github.com", "jd", "git-pull-request"),
+            gpr.get_github_hostname_user_repo_from_url(
                 "git@github.com:jd/git-pull-request"))
         self.assertEqual(
-            ("jd", "git-pull-request"),
-            gpr.get_github_user_repo_from_url(
+            ("example.com", "jd", "git-pull-request"),
+            gpr.get_github_hostname_user_repo_from_url(
                 "https://example.com/jd/git-pull-request"))
 
 

@@ -88,15 +88,23 @@ def git_get_remote_branch_for_branch(branch):
     return branch
 
 
-def get_github_user_repo_from_url(url):
+def get_github_hostname_user_repo_from_url(url):
+    """Return hostname, user and repository to fork from.
+
+    :param url: The URL to parse
+    :return: hostname, user, repository
+    """
     parsed = parse.urlparse(url)
     if parsed.netloc == '':
         # Probably ssh
         host, sep, path = parsed.path.partition(":")
+        if "@" in host:
+            username, sep, host = host.partition("@")
     else:
         path = parsed.path[1:]
+        host = parsed.netloc
     user, repo = path.split("/", 1)
-    return user, repo[:-4] if repo.endswith('.git') else repo
+    return host, user, repo[:-4] if repo.endswith('.git') else repo
 
 
 def split_and_remove_empty_lines(s):
@@ -185,17 +193,20 @@ def git_pull_request(target_remote=None, target_branch=None,
 
     LOG.debug("Remote URL for remote `%s' is `%s'", target_remote, target_url)
 
-    user_to_fork, reponame_to_fork = get_github_user_repo_from_url(target_url)
-    LOG.debug("GitHub user and repository to fork: %s/%s",
-              user_to_fork, reponame_to_fork)
+    hostname, user_to_fork, reponame_to_fork = (
+        get_github_hostname_user_repo_from_url(target_url)
+    )
+    LOG.debug("GitHub user and repository to fork: %s/%s on %s",
+              user_to_fork, reponame_to_fork, hostname)
 
     try:
-        user, password = get_login_password()
+        user, password = get_login_password(hostname)
     except KeyError:
         LOG.critical(
-            "Unable to find your GitHub credentials.\n"
+            "Unable to find your GitHub credentials for %s.\n"
             "Make sure you have a line like this in your ~/.netrc file:\n"
-            "machine github.com login <login> password <pwd>"
+            "machine %s login <login> password <pwd>",
+            hostname, hostname
         )
         return 35
 
