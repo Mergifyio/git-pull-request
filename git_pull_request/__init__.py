@@ -214,7 +214,7 @@ def git_pull_request(target_remote=None, target_branch=None,
 
     kwargs = {}
     if hostname != "github.com":
-        kwargs['base_url'] = "https://" + hostname + "/api"
+        kwargs['base_url'] = "https://" + hostname + "/api/v3"
         LOG.debug("Using API base url `%s'", kwargs['base_url'])
 
     g = github.Github(user, password, **kwargs)
