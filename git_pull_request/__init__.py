@@ -212,7 +212,12 @@ def git_pull_request(target_remote=None, target_branch=None,
 
     LOG.debug("Found GitHub user: `%s' password: <redacted>", user)
 
-    g = github.Github(user, password)
+    kwargs = {}
+    if hostname != "github.com":
+        kwargs['base_url'] = "https://" + hostname + "/api"
+        LOG.debug("Using API base url `%s'", kwargs['base_url'])
+
+    g = github.Github(user, password, **kwargs)
     g_user = g.get_user()
     repo_to_fork = g.get_user(user_to_fork).get_repo(reponame_to_fork)
     repo_forked = g_user.create_fork(repo_to_fork)
