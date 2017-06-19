@@ -48,6 +48,29 @@ edit some commits, you will just need to run `git pull-request` to update your
 pull-request. git-pull-request automatically detects that a pull-request has
 been opened for your current working branch.
 
+Workflow advice
+===============
+When sending pull-requests, it's preferable to do so from your own branch. You
+can create your own branch from `master` by doing::
+
+  $ git checkout -b myownbranch --track origin/master
+
+This will checkout a new branch called `myownbranch` that is a copy of master.
+Using the `--track` option makes sure that the upstream source branch is
+written in your `.git/config` file. This will allow git-pull-request to know to
+which branch send the pull-request.
+
+Since this is long to type, you can use an alias in git to make it faster::
+
+  $ git config --global alias.nb "checkout --track origin/master -b"
+
+This will create a `git nb` alias that will create a new branch tracking master
+and checking it out. You can then use it like that::
+
+  $ git nb foobar
+  Branch foobar set up to track remote branch master from origin.
+  Switched to a new branch 'foobar'
+
 Difference with hub
 ===================
 The command-line wrapper `hub`_ provides `hub fork` and `hub pull-request` as
