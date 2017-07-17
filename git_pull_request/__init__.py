@@ -157,7 +157,8 @@ def git_pull_request(target_remote=None, target_branch=None,
                      comment=None,
                      comment_on_update=True,
                      rebase=True,
-                     force_editor=False):
+                     force_editor=False,
+                     download=None):
     branch = git_get_branch_name()
     if not branch:
         LOG.critical("Unable to find current branch")
@@ -218,8 +219,38 @@ def git_pull_request(target_remote=None, target_branch=None,
         LOG.debug("Using API base url `%s'", kwargs['base_url'])
 
     g = github.Github(user, password, **kwargs)
+    repo = g.get_user(user_to_fork).get_repo(reponame_to_fork)
+
+    if download is not None:
+        download_pull_request(g, repo, target_remote, download)
+    else:
+        fork_and_push_pull_request(g, repo, rebase, target_remote,
+                                   target_branch, branch, user, title, message,
+                                   comment_on_update, comment, force_editor)
+
+
+def download_pull_request(g, repo, target_remote, pull_number):
+    pull = repo.get_pull(pull_number)
+    local_branch_name = "pull/%d-%s-%s" % (pull.number, pull.user.login,
+                                           pull.head.ref)
+    target_ref = "pull/%d/head" % pull.number
+
+    _run_shell_command(["git", "fetch", target_remote, target_ref])
+    try:
+        _run_shell_command(["git", "checkout", local_branch_name], output=True)
+    except RuntimeError:
+        _run_shell_command(["git", "checkout", "-b", local_branch_name,
+                            "FETCH_HEAD"])
+    else:
+        _run_shell_command(["git", "reset", "--hard", "FETCH_HEAD"])
+
+
+def fork_and_push_pull_request(g, repo_to_fork, rebase, target_remote,
+                               target_branch, branch, user, title, message,
+                               comment_on_update, comment, force_editor):
+
     g_user = g.get_user()
-    repo_to_fork = g.get_user(user_to_fork).get_repo(reponame_to_fork)
+
     repo_forked = g_user.create_fork(repo_to_fork)
     LOG.info("Forked repository: %s", repo_forked.html_url)
 
@@ -349,6 +380,9 @@ def main():
     parser = argparse.ArgumentParser(
         description='Send GitHub pull-request.'
     )
+    parser.add_argument("--download", "-d",
+                        type=int,
+                        help="Checkout a pull request")
     parser.add_argument("--debug",
                         action='store_true',
                         help="Enabled debugging.")
@@ -401,6 +435,7 @@ def main():
         comment=args.comment,
         rebase=not args.no_rebase,
         force_editor=args.force_editor,
+        download=args.download,
     )
 
 
