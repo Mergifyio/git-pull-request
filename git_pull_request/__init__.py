@@ -245,6 +245,26 @@ def download_pull_request(g, repo, target_remote, pull_number):
         _run_shell_command(["git", "reset", "--hard", "FETCH_HEAD"])
 
 
+def edit_title_and_message(title, message):
+    editor = os.getenv("EDITOR")
+    if not editor:
+        LOG.warning(
+            "$EDITOR is unset, you will not be able to edit the "
+            "pull-request message")
+        editor = "cat"
+
+    fd, bodyfilename = tempfile.mkstemp()
+    with open(bodyfilename, "w") as body:
+        body.write(title + "\n\n")
+        body.write(message + "\n")
+    os.system(editor + " " + bodyfilename)
+    with open(bodyfilename, "r") as body:
+        content = body.read().strip()
+    os.unlink(bodyfilename)
+
+    return parse_pr_message(content)
+
+
 def fork_and_push_pull_request(g, repo_to_fork, rebase, target_remote,
                                target_branch, branch, user, title, message,
                                comment_on_update, comment, force_editor):
@@ -319,32 +339,16 @@ def fork_and_push_pull_request(g, repo_to_fork, rebase, target_remote,
         nb_of_commits, git_title, git_message = git_get_title_and_message(
             "%s/%s" % (target_remote, target_branch), branch)
 
+        title = title or git_title
+        message = message or git_message
+
         # Do not run an editor if there's only one commit or if both title and
         # message were specified
         if (force_editor or
            ((not title or not message) and nb_of_commits > 1) or
            (((title and not message) or
              (message and not title)) and nb_of_commits == 1)):
-            editor = os.getenv("EDITOR")
-            if not editor:
-                LOG.warning(
-                    "$EDITOR is unset, you will not be able to edit the "
-                    "pull-request message")
-                editor = "cat"
-
-            fd, bodyfilename = tempfile.mkstemp()
-            with open(bodyfilename, "w") as body:
-                body.write((title or git_title) + "\n\n")
-                body.write((message or git_message) + "\n")
-            os.system(editor + " " + bodyfilename)
-            with open(bodyfilename, "r") as body:
-                content = body.read().strip()
-            os.unlink(bodyfilename)
-
-            title, message = parse_pr_message(content)
-        else:
-            title = title or git_title
-            message = message or git_message
+            title, message = edit_title_and_message(title, message)
 
         if title is None:
             LOG.critical("Pull-request message is empty, aborting")

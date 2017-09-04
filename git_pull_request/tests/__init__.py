@@ -129,6 +129,16 @@ class TestMessageParsing(unittest.TestCase):
             gpr.parse_pr_message("foobar\n\nsomething\nawesome\n"))
 
 
+class TestMessageEditor(unittest.TestCase):
+    def setUp(self):
+        os.environ["EDITOR"] = 'cat'
+
+    def test_edit_title_and_message(self):
+        self.assertEqual(("foobar", "something\nawesome"),
+                         gpr.edit_title_and_message(
+                         "foobar", "something\nawesome"))
+
+
 class TestExceptionFormatting(unittest.TestCase):
     def test_issue_12(self):
         e = github.GithubException(422, {
