@@ -316,6 +316,11 @@ def fork_and_push_pull_request(g, repo_to_fork, rebase, target_remote,
     if pulls:
         for pull in pulls:
             LOG.info("Pull-request updated:\n  %s", pull.html_url)
+
+            if force_editor:
+                title, message = edit_title_and_message(title or pull.title,
+                                                        message or pull.body)
+
             if title and message:
                 pull.edit(title=title, body=message)
                 LOG.debug("Updated pull-request title and message")
