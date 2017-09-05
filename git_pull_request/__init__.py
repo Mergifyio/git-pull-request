@@ -257,7 +257,9 @@ def edit_title_and_message(title, message):
     with open(bodyfilename, "w") as body:
         body.write(title + "\n\n")
         body.write(message + "\n")
-    os.system(editor + " " + bodyfilename)
+    status = os.system(editor + " " + bodyfilename)
+    if status != 0:
+        raise RuntimeError("Editor exited with status code %d" % status)
     with open(bodyfilename, "r") as body:
         content = body.read().strip()
     os.unlink(bodyfilename)

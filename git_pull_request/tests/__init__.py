@@ -138,6 +138,12 @@ class TestMessageEditor(unittest.TestCase):
                          gpr.edit_title_and_message(
                          "foobar", "something\nawesome"))
 
+    def test_edit_title_and_message_failure(self):
+        os.environ["EDITOR"] = 'false'
+        self.assertRaises(RuntimeError,
+                          gpr.edit_title_and_message,
+                          "foobar", "something\nawesome")
+
 
 class TestExceptionFormatting(unittest.TestCase):
     def test_issue_12(self):
