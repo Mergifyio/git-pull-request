@@ -437,17 +437,22 @@ def main():
         level=logging.DEBUG if args.debug else logging.INFO,
     )
 
-    return git_pull_request(
-        target_remote=args.target_remote,
-        target_branch=args.target_branch,
-        title=args.title,
-        message=args.message,
-        comment_on_update=not args.no_comment_on_update,
-        comment=args.comment,
-        rebase=not args.no_rebase,
-        force_editor=args.force_editor,
-        download=args.download,
-    )
+    try:
+        return git_pull_request(
+            target_remote=args.target_remote,
+            target_branch=args.target_branch,
+            title=args.title,
+            message=args.message,
+            comment_on_update=not args.no_comment_on_update,
+            comment=args.comment,
+            rebase=not args.no_rebase,
+            force_editor=args.force_editor,
+            download=args.download,
+        )
+    except Exception as e:
+        if args.debug:
+            raise
+        LOG.error(e)
 
 
 if __name__ == '__main__':
