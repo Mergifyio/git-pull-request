@@ -1,3 +1,8 @@
 __pycache__
 .tox
 .eggs
+AUTHORS
+dist/
+*.egg-info
+*.pyc
+ChangeLog
