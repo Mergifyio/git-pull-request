@@ -299,13 +299,16 @@ def fork_and_push_pull_request(g, repo_to_fork, rebase, target_remote,
                  branch])
         except RuntimeError:
             LOG.error(
-                "It is likely that your change has a merge conflict. "
-                "You may resolve it in the working tree now as "
-                "described above and then run `git pull-request' again, or "
-                "if you do not want to resolve it yet (note that the "
-                "change can not merge until the conflict is resolved) "
-                "you may run `git rebase --abort' then `git pull-request -R' "
-                "to upload the change without rebasing.")
+                "It is likely that your change has a merge conflict.\n"
+                "You may resolve it in the working tree now as described "
+                "above.\n"
+                "Once done run `git pull-request' again.\n\n"
+                "If you want to abort conflict resolution, run "
+                "`git rebase --abort'.\n\n"
+                "Alternatively run `git pull-request -R' to upload the change "
+                "without rebase.\n"
+                "However the change won't able to merge until the conflict is "
+                "resolved.")
             return 37
 
     LOG.info("Force-pushing branch `%s' to remote `%s'",
