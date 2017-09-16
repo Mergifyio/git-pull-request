@@ -17,7 +17,7 @@ Installation
 
 Use the standard Python installation method::
 
-  pip install git-pull-request
+ sudo pip install git-pull-request
 
 
 Usage
