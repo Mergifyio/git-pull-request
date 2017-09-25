@@ -13,11 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import argparse
+import glob
 import itertools
 import logging
 import netrc
 import operator
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -149,6 +151,13 @@ def git_get_title_and_message(begin, end):
     else:
         title = "Pull request for " + end
         message = "\n".join(titles)
+
+    pr_template = find_pull_request_template()
+    if pr_template:
+        LOG.warning(
+            "This project ask to you a standardized pull request message")
+        message = get_pr_template_message(pr_template)
+
     return (len(titles), title, message)
 
 
@@ -245,21 +254,55 @@ def download_pull_request(g, repo, target_remote, pull_number):
         _run_shell_command(["git", "reset", "--hard", "FETCH_HEAD"])
 
 
-def edit_title_and_message(title, message):
+def get_editor():
     editor = os.getenv("EDITOR")
     if not editor:
         LOG.warning(
             "$EDITOR is unset, you will not be able to edit the "
             "pull-request message")
         editor = "cat"
+    return editor
+
+
+def find_pull_request_template():
+    pr_template_paths = [
+        os.getcwd(),
+        os.path.join(os.getcwd(), ".github"),
+        os.path.join(os.getcwd(), "docs"),
+    ]
+    for path in pr_template_paths:
+        templates = glob.glob(os.path.join(path, "PULL_REQUEST_TEMPLATE*"))
+        if templates:
+            return templates[0]
+
+
+def get_pr_template_message(template):
+    fd, bodyfilename = tempfile.mkstemp()
+    shutil.copy(template, bodyfilename)
+    status = os.system(get_editor() + " " + bodyfilename)
+    if status != 0:
+        raise RuntimeError("Editor exited with status code %d" % status)
+
+    with open(bodyfilename, "r") as body:
+        content = body.read().strip()
+    os.unlink(bodyfilename)
+    return content
+
+
+def edit_title_and_message(title, message):
+    pr_template = find_pull_request_template()
+    if pr_template:
+        content = get_pr_template_message(pr_template)
+        return title, content
 
     fd, bodyfilename = tempfile.mkstemp()
     with open(bodyfilename, "w") as body:
         body.write(title + "\n\n")
         body.write(message + "\n")
-    status = os.system(editor + " " + bodyfilename)
+    status = os.system(get_editor() + " " + bodyfilename)
     if status != 0:
         raise RuntimeError("Editor exited with status code %d" % status)
+
     with open(bodyfilename, "r") as body:
         content = body.read().strip()
     os.unlink(bodyfilename)
