@@ -1,4 +1,4 @@
-.PHONY: clean clean-pyc clean-build docs help
+.PHONY: clean clean-pyc clean-build help
 .DEFAULT_GOAL := help
 
 define PRINT_HELP_PYSCRIPT
@@ -12,7 +12,7 @@ for line in sys.stdin:
 endef
 export PRINT_HELP_PYSCRIPT
 
-help:
+help: ## display help (this message)
 	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
 
 clean: clean-build clean-pyc ## remove all artifacts
