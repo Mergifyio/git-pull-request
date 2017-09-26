@@ -16,9 +16,8 @@ import os
 import unittest
 
 import fixtures
-import github
-
 import git_pull_request as gpr
+import github
 
 
 class TestRunShellCommand(unittest.TestCase):
