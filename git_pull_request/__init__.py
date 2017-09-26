@@ -13,11 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import argparse
+import glob
 import itertools
 import logging
 import netrc
 import operator
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -142,13 +144,18 @@ def git_get_title_and_message(begin, end):
     :return: number of commits, title, message
     """
     titles = git_get_log_titles(begin, end)
-
+    title = "Pull request for " + end
     if len(titles) == 1:
         title = titles[0]
-        message = git_get_commit_body(end)
+    pr_template = find_pull_request_template()
+    if pr_template:
+        message = get_pr_template_message(pr_template)
     else:
-        title = "Pull request for " + end
-        message = "\n".join(titles)
+        if len(titles) == 1:
+            message = git_get_commit_body(end)
+        else:
+            message = "\n".join(titles)
+
     return (len(titles), title, message)
 
 
@@ -245,24 +252,50 @@ def download_pull_request(g, repo, target_remote, pull_number):
         _run_shell_command(["git", "reset", "--hard", "FETCH_HEAD"])
 
 
-def edit_title_and_message(title, message):
+def edit_file_get_content_and_remove(filename):
     editor = os.getenv("EDITOR")
     if not editor:
         LOG.warning(
             "$EDITOR is unset, you will not be able to edit the "
             "pull-request message")
         editor = "cat"
+    status = os.system(editor + " " + filename)
+    if status != 0:
+        raise RuntimeError("Editor exited with status code %d" % status)
+    with open(filename, "r") as body:
+        content = body.read().strip()
+    os.unlink(filename)
 
+    return content
+
+
+def find_pull_request_template():
+    filename = "PULL_REQUEST_TEMPLATE*"
+    pr_template_paths = [
+        filename,
+        os.path.join(".github", filename),
+        os.path.join("docs", filename),
+    ]
+    for path in pr_template_paths:
+        templates = glob.glob(path)
+        if templates:
+            return templates[0]
+
+
+def get_pr_template_message(template):
+    fd, bodyfilename = tempfile.mkstemp()
+    shutil.copy(template, bodyfilename)
+    content = edit_file_get_content_and_remove(bodyfilename)
+
+    return content
+
+
+def edit_title_and_message(title, message):
     fd, bodyfilename = tempfile.mkstemp()
     with open(bodyfilename, "w") as body:
         body.write(title + "\n\n")
         body.write(message + "\n")
-    status = os.system(editor + " " + bodyfilename)
-    if status != 0:
-        raise RuntimeError("Editor exited with status code %d" % status)
-    with open(bodyfilename, "r") as body:
-        content = body.read().strip()
-    os.unlink(bodyfilename)
+    content = edit_file_get_content_and_remove(bodyfilename)
 
     return parse_pr_message(content)
 

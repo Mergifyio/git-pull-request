@@ -116,6 +116,48 @@ class TestGitCommand(fixtures.TestWithFixtures):
                          gpr.git_get_title_and_message("master^^", "master"))
 
 
+class TestGithubPRTemplate(fixtures.TestWithFixtures):
+    def setUp(self):
+        os.environ["EDITOR"] = 'cat'
+        self.tempdir = self.useFixture(fixtures.TempDir()).path
+        os.chdir(self.tempdir)
+
+    def test_git_get_title_and_message(self):
+        self.tempdir = self.useFixture(fixtures.TempDir()).path
+        os.chdir(self.tempdir)
+        gpr._run_shell_command(["git", "init", "--quiet"])
+        gpr._run_shell_command(["git", "remote", "add", "origin",
+                                "https://github.com/jd/git-pull-request.git"])
+        gpr._run_shell_command(["git", "config", "branch.master.merge",
+                                "refs/heads/master"])
+        gpr._run_shell_command(["git", "config", "branch.master.remote",
+                                "origin"])
+        gpr._run_shell_command(["git", "config", "user.name", "nobody"])
+        gpr._run_shell_command(["git", "config", "user.email",
+                                "nobody@example.com"])
+        gpr._run_shell_command(["git", "commit", "--allow-empty",
+                                "--no-edit", "-q",
+                                "-m", "Import"])
+        gpr._run_shell_command(["git", "commit", "--allow-empty",
+                                "--no-edit", "-q",
+                                "-m", "First message"])
+        gpr._run_shell_command(["git", "commit", "--allow-empty",
+                                "--no-edit", "-q",
+                                "-m", "Last message\n\nLong body, "
+                                "but not so long\n"])
+
+        with open(os.path.join(
+                  self.tempdir,
+                  "PULL_REQUEST_TEMPLATE.md"), "w+") as pr_template:
+            pr_template.write("# test")
+
+        self.assertEqual((1, "Last message", "# test"),
+                         gpr.git_get_title_and_message("master^", "master"))
+
+        self.assertEqual((2, "Pull request for master", "# test"),
+                         gpr.git_get_title_and_message("master^^", "master"))
+
+
 class TestMessageParsing(unittest.TestCase):
     def test_only_title(self):
         self.assertEqual(
