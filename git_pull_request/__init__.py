@@ -24,6 +24,7 @@ import subprocess
 import sys
 import tempfile
 from urllib import parse
+from uuid import uuid4
 
 import daiquiri
 
@@ -166,7 +167,8 @@ def git_pull_request(target_remote=None, target_branch=None,
                      comment_on_update=True,
                      rebase=True,
                      force_editor=False,
-                     download=None):
+                     download=None,
+                     ignore_tag=False):
     branch = git_get_branch_name()
     if not branch:
         LOG.critical("Unable to find current branch")
@@ -234,7 +236,8 @@ def git_pull_request(target_remote=None, target_branch=None,
     else:
         fork_and_push_pull_request(g, repo, rebase, target_remote,
                                    target_branch, branch, user, title, message,
-                                   comment_on_update, comment, force_editor)
+                                   comment_on_update, comment,
+                                   force_editor, ignore_tag)
 
 
 def download_pull_request(g, repo, target_remote, pull_number):
@@ -301,9 +304,23 @@ def edit_title_and_message(title, message):
     return parse_pr_message(content)
 
 
+def preserve_older_revision(branch, remote_to_push):
+    tag = "{}-{}".format(branch, uuid4())
+    _run_shell_command(["git", "tag", tag])
+    try:
+        _run_shell_command(["git", "push", remote_to_push, tag])
+    except RuntimeError:
+        LOG.error("Unable to push tag {} for previous revision".format(tag))
+    else:
+        LOG.info("Previous revision of patchset saved on tag {}".format(tag))
+
+    _run_shell_command(["git", "tag", "-d", tag])
+
+
 def fork_and_push_pull_request(g, repo_to_fork, rebase, target_remote,
                                target_branch, branch, user, title, message,
-                               comment_on_update, comment, force_editor):
+                               comment_on_update, comment,
+                               force_editor, ignore_tag):
 
     g_user = g.get_user()
 
@@ -411,6 +428,9 @@ def fork_and_push_pull_request(g, repo_to_fork, rebase, target_remote,
         else:
             LOG.info("Pull-request created: " + pull.html_url)
 
+    if not ignore_tag:
+        preserve_older_revision(branch, remote_to_push)
+
 
 def _format_github_exception(action, exc):
         url = exc.data.get("documentation_url", "GitHub documentation")
@@ -462,6 +482,12 @@ def main():
         "--comment", "-C",
         help="Comment to publish when updating the pull-request"
     )
+    parser.add_argument(
+        "--no-tag-previous-revision",
+        action="store_true",
+        default=False,
+        help="Preserve older revision when pushing"
+    )
 
     args = parser.parse_args()
 
@@ -485,6 +511,7 @@ def main():
             rebase=not args.no_rebase,
             force_editor=args.force_editor,
             download=args.download,
+            ignore_tag=args.no_tag_previous_revision
         )
     except Exception as e:
         if args.debug:
