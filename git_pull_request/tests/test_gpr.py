@@ -16,7 +16,9 @@ import os
 import unittest
 
 import fixtures
+
 import git_pull_request as gpr
+
 import github
 
 
