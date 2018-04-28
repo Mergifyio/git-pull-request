@@ -19,6 +19,9 @@ Use the standard Python installation method::
 
   pip3 install git-pull-request
 
+On some MacOS' you'll need to use the following, as it requires `python3` ::
+
+  pip3 install git-pull-request
 
 Usage
 =====
