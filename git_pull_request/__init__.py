@@ -48,10 +48,29 @@ def _run_shell_command(cmd, output=None, raise_on_error=True):
         return out[0].strip().decode()
 
 
-def get_login_password(site_name="github.com", netrc_file="~/.netrc"):
+def get_login_password(site_name="github.com",
+                       netrc_file="~/.netrc",
+                       git_credential_file="~/.git-credentials"):
     """Read a .netrc file and return login/password for LWN."""
-    n = netrc.netrc(os.path.expanduser(netrc_file))
-    return n.hosts[site_name][0], n.hosts[site_name][2]
+    try:
+        n = netrc.netrc(os.path.expanduser(netrc_file))
+    except OSError:
+        pass
+    else:
+        if site_name in n.hosts:
+            return n.hosts[site_name][0], n.hosts[site_name][2]
+
+    try:
+        with open(os.path.expanduser(git_credential_file)) as f:
+            for line in f:
+                parsed = parse.urlparse(line.strip())
+                if parsed.hostname == site_name:
+                    return (parse.unquote(parsed.username),
+                            parse.unquote(parsed.password))
+    except OSError:
+        pass
+
+    return None, None
 
 
 def git_remote_matching_url(url):
@@ -210,13 +229,13 @@ def git_pull_request(target_remote=None, target_branch=None,
     LOG.debug("GitHub user and repository to fork: %s/%s on %s",
               user_to_fork, reponame_to_fork, hostname)
 
-    try:
-        user, password = get_login_password(hostname)
-    except KeyError:
+    user, password = get_login_password(hostname)
+    if not user or not password:
         LOG.critical(
             "Unable to find your GitHub credentials for %s.\n"
             "Make sure you have a line like this in your ~/.netrc file:\n"
-            "machine %s login <login> password <pwd>",
+            "machine %s login <login> password <pwd>, "
+            "or use git store credentials",
             hostname, hostname
         )
         return 35
