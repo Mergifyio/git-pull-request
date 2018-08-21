@@ -62,7 +62,7 @@ which branch send the pull-request.
 
 Since this is long to type, you can use an alias in git to make it faster::
 
-  $ git config --global alias.nb "!git checkout --track $(git config branch.$(git rev-parse --abbrev-ref HEAD).remote)/$(git rev-parse --abbrev-ref HEAD) -b"
+  $ git config --global alias.nb '!git checkout --track $(git config branch.$(git rev-parse --abbrev-ref HEAD).remote)/$(git rev-parse --abbrev-ref HEAD) -b'
 
 This will create a `git nb` alias that will create a new branch tracking the
 current branch and checking it out. You can then use it like that::
