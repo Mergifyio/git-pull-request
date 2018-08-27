@@ -329,9 +329,9 @@ def preserve_older_revision(branch, remote_to_push):
     try:
         _run_shell_command(["git", "push", remote_to_push, tag])
     except RuntimeError:
-        LOG.error("Unable to push tag {} for previous revision".format(tag))
+        LOG.error("Unable to push tag %s for previous revision", tag)
     else:
-        LOG.info("Previous revision of patchset saved on tag {}".format(tag))
+        LOG.info("Previous revision of patchset saved on tag %s", tag)
 
     _run_shell_command(["git", "tag", "-d", tag])
 
@@ -445,7 +445,7 @@ def fork_and_push_pull_request(g, repo_to_fork, rebase, target_remote,
             )
             return 50
         else:
-            LOG.info("Pull-request created: " + pull.html_url)
+            LOG.info("Pull-request created: %s", pull.html_url)
 
     if not ignore_tag:
         preserve_older_revision(branch, remote_to_push)
@@ -533,9 +533,7 @@ def main():
             ignore_tag=args.no_tag_previous_revision
         )
     except Exception as e:
-        if args.debug:
-            raise
-        LOG.error(e)
+        LOG.error("Unable to send pull request", exc_info=True)
 
 
 if __name__ == '__main__':
