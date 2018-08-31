@@ -208,3 +208,23 @@ class TestExceptionFormatting(unittest.TestCase):
             "https://developer.github.com/v3/pulls/#create-a-pull-request "
             "for more information.",
             gpr._format_github_exception("create pull request", e))
+
+
+class TestGithubHostnameUserRepoFromUrl(unittest.TestCase):
+    def test_git_clone_url(self):
+        expected = ("example.com", "jd", "git-pull-request")
+
+        self.assertEqual(
+            expected,
+            gpr.get_github_hostname_user_repo_from_url(
+                "https://example.com/jd/git-pull-request"))
+
+        self.assertEqual(
+            expected,
+            gpr.get_github_hostname_user_repo_from_url(
+                "https://example.com/jd/git-pull-request.git"))
+
+        self.assertEqual(
+            expected,
+            gpr.get_github_hostname_user_repo_from_url(
+                "https://example.com/jd/git-pull-request/"))
