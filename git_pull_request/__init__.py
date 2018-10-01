@@ -416,19 +416,18 @@ def fork_and_push_pull_request(g, repo_to_fork, rebase, target_remote,
             LOG.debug("Commented: \"%s\"", comment)
     else:
         # Create a pull request
-        nb_of_commits, git_title, git_message = git_get_title_and_message(
-            "%s/%s" % (target_remote, target_branch), branch)
-
-        title = title or git_title
-        message = message or git_message
-
-        # Do not run an editor if there's only one commit or if both title and
-        # message were specified
-        if (force_editor or
-           ((not title or not message) and nb_of_commits > 1) or
-           (((title and not message) or
-             (message and not title)) and nb_of_commits == 1)):
-            title, message = edit_title_and_message(title, message)
+        if force_editor or not (title and message):
+            nb_of_commits, git_title, git_message = git_get_title_and_message(
+                "%s/%s" % (target_remote, target_branch), branch)
+            title = title or git_title
+            message = message or git_message
+            # Do not run an editor if there's only one commit or if both
+            # title and message were specified
+            if (force_editor or
+               ((not title or not message) and nb_of_commits > 1) or
+               (((title and not message) or
+                 (message and not title)) and nb_of_commits == 1)):
+                title, message = edit_title_and_message(title, message)
 
         if title is None:
             LOG.critical("Pull-request message is empty, aborting")
