@@ -451,15 +451,15 @@ def fork_and_push_pull_request(g, repo_to_fork, rebase, target_remote,
 
 
 def _format_github_exception(action, exc):
-        url = exc.data.get("documentation_url", "GitHub documentation")
-        errors_msg = "\n".join(map(operator.itemgetter("message"),
-                                   exc.data.get("errors", [])))
-        return (
-            "Unable to %s: %s (%s)\n"
-            "%s\n"
-            "Check %s for more information." %
-            (action, exc.data.get('message'), exc.status, errors_msg, url)
-        )
+    url = exc.data.get("documentation_url", "GitHub documentation")
+    errors_msg = "\n".join(map(operator.itemgetter("message"),
+                               exc.data.get("errors", [])))
+    return (
+        "Unable to %s: %s (%s)\n"
+        "%s\n"
+        "Check %s for more information." %
+        (action, exc.data.get('message'), exc.status, errors_msg, url)
+    )
 
 
 def main():
@@ -531,7 +531,7 @@ def main():
             download=args.download,
             ignore_tag=args.no_tag_previous_revision
         )
-    except Exception as e:
+    except Exception:
         LOG.error("Unable to send pull request", exc_info=True)
 
 
