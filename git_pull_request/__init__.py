@@ -187,7 +187,8 @@ def git_pull_request(target_remote=None, target_branch=None,
                      rebase=True,
                      force_editor=False,
                      download=None,
-                     ignore_tag=False):
+                     ignore_tag=False,
+                     dont_fork=True):
     branch = git_get_branch_name()
     if not branch:
         LOG.critical("Unable to find current branch")
@@ -256,7 +257,7 @@ def git_pull_request(target_remote=None, target_branch=None,
         fork_and_push_pull_request(g, repo, rebase, target_remote,
                                    target_branch, branch, user, title, message,
                                    comment_on_update, comment,
-                                   force_editor, ignore_tag)
+                                   force_editor, ignore_tag, dont_fork)
 
 
 def download_pull_request(g, repo, target_remote, pull_number):
@@ -339,23 +340,27 @@ def preserve_older_revision(branch, remote_to_push):
 def fork_and_push_pull_request(g, repo_to_fork, rebase, target_remote,
                                target_branch, branch, user, title, message,
                                comment_on_update, comment,
-                               force_editor, ignore_tag):
+                               force_editor, ignore_tag, dont_fork):
 
     g_user = g.get_user()
 
-    repo_forked = g_user.create_fork(repo_to_fork)
-    LOG.info("Forked repository: %s", repo_forked.html_url)
-
-    remote_to_push = git_remote_matching_url(repo_forked.clone_url)
-
-    if remote_to_push:
-        LOG.debug("Found forked repository already in remote as `%s'",
-                  remote_to_push)
+    if dont_fork:
+        remote_to_push = target_remote
     else:
-        remote_to_push = "github"
-        _run_shell_command(
-            ["git", "remote", "add", remote_to_push, repo_forked.clone_url])
-        LOG.info("Added forked repository as remote `%s'", remote_to_push)
+        repo_forked = g_user.create_fork(repo_to_fork)
+        LOG.info("Forked repository: %s", repo_forked.html_url)
+
+        remote_to_push = git_remote_matching_url(repo_forked.clone_url)
+
+        if remote_to_push:
+            LOG.debug("Found forked repository already in remote as `%s'",
+                      remote_to_push)
+        else:
+            remote_to_push = "github"
+            _run_shell_command(
+                ["git", "remote", "add",
+                 remote_to_push, repo_forked.clone_url])
+            LOG.info("Added forked repository as remote `%s'", remote_to_push)
 
     if rebase:
         _run_shell_command(["git", "remote", "update", target_remote])
@@ -506,6 +511,12 @@ def main():
         default=False,
         help="Preserve older revision when pushing"
     )
+    parser.add_argument(
+        "--no-fork",
+        action="store_true",
+        default=False,
+        help="Don't fork to create the pull-request"
+    )
 
     args = parser.parse_args()
 
@@ -529,7 +540,8 @@ def main():
             rebase=not args.no_rebase,
             force_editor=args.force_editor,
             download=args.download,
-            ignore_tag=args.no_tag_previous_revision
+            ignore_tag=args.no_tag_previous_revision,
+            dont_fork=args.no_fork
         )
     except Exception:
         LOG.error("Unable to send pull request", exc_info=True)
