@@ -346,6 +346,7 @@ def fork_and_push_pull_request(g, repo_to_fork, rebase, target_remote,
 
     if dont_fork:
         remote_to_push = target_remote
+        head = "{}:{}".format(repo_to_fork.owner.login, branch)
     else:
         repo_forked = g_user.create_fork(repo_to_fork)
         LOG.info("Forked repository: %s", repo_forked.html_url)
@@ -361,6 +362,7 @@ def fork_and_push_pull_request(g, repo_to_fork, rebase, target_remote,
                 ["git", "remote", "add",
                  remote_to_push, repo_forked.clone_url])
             LOG.info("Added forked repository as remote `%s'", remote_to_push)
+        head = "{}:{}".format(user, branch)
 
     if rebase:
         _run_shell_command(["git", "remote", "update", target_remote])
@@ -440,7 +442,7 @@ def fork_and_push_pull_request(g, repo_to_fork, rebase, target_remote,
 
         try:
             pull = repo_to_fork.create_pull(base=target_branch,
-                                            head=user + ":" + branch,
+                                            head=head,
                                             title=title,
                                             body=message)
         except github.GithubException as e:
