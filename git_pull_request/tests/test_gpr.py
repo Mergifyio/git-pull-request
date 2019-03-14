@@ -209,6 +209,24 @@ class TestExceptionFormatting(unittest.TestCase):
             "for more information.",
             gpr._format_github_exception("create pull request", e))
 
+    def test_no_message(self):
+        e = github.GithubException(422, {
+            'message': 'Validation Failed',
+            'documentation_url':
+            'https://developer.github.com/v3/pulls/#create-a-pull-request',
+            'errors': [{
+                'resource': 'PullRequest',
+                'field': 'head',
+                'code': 'invalid'}
+            ]}
+        )
+        self.assertEqual(
+            "Unable to create pull request: Validation Failed (422)\n\n"
+            "Check "
+            "https://developer.github.com/v3/pulls/#create-a-pull-request "
+            "for more information.",
+            gpr._format_github_exception("create pull request", e))
+
 
 class TestGithubHostnameUserRepoFromUrl(unittest.TestCase):
     def test_git_clone_url(self):
