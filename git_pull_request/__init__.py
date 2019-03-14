@@ -459,8 +459,8 @@ def fork_and_push_pull_request(g, repo_to_fork, rebase, target_remote,
 
 def _format_github_exception(action, exc):
     url = exc.data.get("documentation_url", "GitHub documentation")
-    errors_msg = "\n".join(map(operator.itemgetter("message"),
-                               exc.data.get("errors", [])))
+    errors_msg = "\n".join(error.get("message", "")
+                           for error in exc.data.get("errors", []))
     return (
         "Unable to %s: %s (%s)\n"
         "%s\n"
