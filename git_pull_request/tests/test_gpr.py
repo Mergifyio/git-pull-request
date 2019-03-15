@@ -119,13 +119,11 @@ class TestGitCommand(fixtures.TestWithFixtures):
 
 class TestGithubPRTemplate(fixtures.TestWithFixtures):
     def setUp(self):
-        os.environ["EDITOR"] = 'cat'
+        self.useFixture(fixtures.EnvironmentVariable("EDITOR", "cat"))
         self.tempdir = self.useFixture(fixtures.TempDir()).path
         os.chdir(self.tempdir)
 
     def test_git_get_title_and_message(self):
-        self.tempdir = self.useFixture(fixtures.TempDir()).path
-        os.chdir(self.tempdir)
         gpr._run_shell_command(["git", "init", "--quiet"])
         gpr._run_shell_command(["git", "remote", "add", "origin",
                                 "https://github.com/jd/git-pull-request.git"])
@@ -159,8 +157,11 @@ class TestGithubPRTemplate(fixtures.TestWithFixtures):
                          gpr.git_get_title_and_message("master^^", "master"))
 
 
-class TestMessageParsing(unittest.TestCase):
+class TestMessageParsing(fixtures.TestWithFixtures):
     def test_only_title(self):
+        self.useFixture(fixtures.EnvironmentVariable("EDITOR", "cat"))
+        tempdir = self.useFixture(fixtures.TempDir()).path
+        os.chdir(tempdir)
         self.assertEqual(
             ("foobar", "something\nawesome"),
             gpr.parse_pr_message("foobar\nsomething\nawesome"))
@@ -172,9 +173,11 @@ class TestMessageParsing(unittest.TestCase):
             gpr.parse_pr_message("foobar\n\nsomething\nawesome\n"))
 
 
-class TestMessageEditor(unittest.TestCase):
+class TestMessageEditor(fixtures.TestWithFixtures):
     def setUp(self):
-        os.environ["EDITOR"] = 'cat'
+        self.tempdir = self.useFixture(fixtures.TempDir()).path
+        os.chdir(self.tempdir)
+        self.useFixture(fixtures.EnvironmentVariable("EDITOR", "cat"))
 
     def test_edit_title_and_message(self):
         self.assertEqual(("foobar", "something\nawesome"),
@@ -182,7 +185,7 @@ class TestMessageEditor(unittest.TestCase):
                          "foobar", "something\nawesome"))
 
     def test_edit_title_and_message_failure(self):
-        os.environ["EDITOR"] = 'false'
+        self.useFixture(fixtures.EnvironmentVariable("EDITOR", "false"))
         self.assertRaises(RuntimeError,
                           gpr.edit_title_and_message,
                           "foobar", "something\nawesome")
