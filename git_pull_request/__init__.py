@@ -277,7 +277,7 @@ def download_pull_request(g, repo, target_remote, pull_number):
 
 
 def edit_file_get_content_and_remove(filename):
-    editor = os.getenv("EDITOR")
+    editor = _run_shell_command(["git", "var", "GIT_EDITOR"], output=True)
     if not editor:
         LOG.warning(
             "$EDITOR is unset, you will not be able to edit the "
