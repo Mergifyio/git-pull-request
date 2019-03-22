@@ -308,6 +308,7 @@ def find_pull_request_template():
 
 def get_pr_template_message(template):
     fd, bodyfilename = tempfile.mkstemp()
+    os.close(fd)
     shutil.copy(template, bodyfilename)
     content = edit_file_get_content_and_remove(bodyfilename)
 
@@ -316,6 +317,7 @@ def get_pr_template_message(template):
 
 def edit_title_and_message(title, message):
     fd, bodyfilename = tempfile.mkstemp()
+    os.close(fd)
     with open(bodyfilename, "w") as body:
         body.write(title + "\n\n")
         body.write(message + "\n")
