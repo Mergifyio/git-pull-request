@@ -183,7 +183,6 @@ def git_get_title_and_message(begin, end):
 def git_pull_request(target_remote=None, target_branch=None,
                      title=None, message=None,
                      comment=None,
-                     comment_on_update=True,
                      rebase=True,
                      force_editor=False,
                      download=None,
@@ -256,7 +255,7 @@ def git_pull_request(target_remote=None, target_branch=None,
     else:
         fork_and_push_pull_request(g, repo, rebase, target_remote,
                                    target_branch, branch, user, title, message,
-                                   comment_on_update, comment,
+                                   comment,
                                    force_editor, tag_previous_revision,
                                    dont_fork)
 
@@ -342,7 +341,7 @@ def preserve_older_revision(branch, remote_to_push):
 
 def fork_and_push_pull_request(g, repo_to_fork, rebase, target_remote,
                                target_branch, branch, user, title, message,
-                               comment_on_update, comment,
+                               comment,
                                force_editor, tag_previous_revision, dont_fork):
 
     g_user = g.get_user()
@@ -415,11 +414,7 @@ def fork_and_push_pull_request(g, repo_to_fork, rebase, target_remote,
             elif message:
                 pull.edit(body=message)
                 LOG.debug("Updated pull-request message")
-        if comment_on_update:
-            if not comment:
-                branch_sha = _run_shell_command(
-                    ["git", "rev-parse", branch], output=True)
-                comment = "Pull-request updated, HEAD is now %s" % branch_sha
+        if comment:
             # FIXME(jd) we should be able to comment directly on a PR without
             # getting it as an issue but pygithub does not allow that yet
             repo_to_fork.get_issue(pull.number).create_comment(comment)
@@ -501,12 +496,6 @@ def main():
         default=False,
         help="Force editor to run to edit pull-request message.")
     parser.add_argument(
-        "--no-comment-on-update",
-        action="store_true",
-        default=False,
-        help="Do not post a comment stating the pull-request has been updated."
-    )
-    parser.add_argument(
         "--comment", "-C",
         help="Comment to publish when updating the pull-request"
     )
@@ -540,7 +529,6 @@ def main():
             target_branch=args.target_branch,
             title=args.title,
             message=args.message,
-            comment_on_update=not args.no_comment_on_update,
             comment=args.comment,
             rebase=not args.no_rebase,
             force_editor=args.force_editor,
