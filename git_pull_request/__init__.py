@@ -187,7 +187,7 @@ def git_pull_request(target_remote=None, target_branch=None,
                      rebase=True,
                      force_editor=False,
                      download=None,
-                     ignore_tag=False,
+                     tag_previous_revision=False,
                      dont_fork=True):
     branch = git_get_branch_name()
     if not branch:
@@ -257,7 +257,8 @@ def git_pull_request(target_remote=None, target_branch=None,
         fork_and_push_pull_request(g, repo, rebase, target_remote,
                                    target_branch, branch, user, title, message,
                                    comment_on_update, comment,
-                                   force_editor, ignore_tag, dont_fork)
+                                   force_editor, tag_previous_revision,
+                                   dont_fork)
 
 
 def download_pull_request(g, repo, target_remote, pull_number):
@@ -342,7 +343,7 @@ def preserve_older_revision(branch, remote_to_push):
 def fork_and_push_pull_request(g, repo_to_fork, rebase, target_remote,
                                target_branch, branch, user, title, message,
                                comment_on_update, comment,
-                               force_editor, ignore_tag, dont_fork):
+                               force_editor, tag_previous_revision, dont_fork):
 
     g_user = g.get_user()
 
@@ -455,7 +456,7 @@ def fork_and_push_pull_request(g, repo_to_fork, rebase, target_remote,
         else:
             LOG.info("Pull-request created: %s", pull.html_url)
 
-    if not ignore_tag:
+    if tag_previous_revision:
         preserve_older_revision(branch, remote_to_push)
 
 
@@ -510,7 +511,7 @@ def main():
         help="Comment to publish when updating the pull-request"
     )
     parser.add_argument(
-        "--no-tag-previous-revision",
+        "--tag-previous-revision",
         action="store_true",
         default=False,
         help="Preserve older revision when pushing"
@@ -544,7 +545,7 @@ def main():
             rebase=not args.no_rebase,
             force_editor=args.force_editor,
             download=args.download,
-            ignore_tag=args.no_tag_previous_revision,
+            tag_previous_revision=args.tag_previous_revision,
             dont_fork=args.no_fork
         )
     except Exception:
