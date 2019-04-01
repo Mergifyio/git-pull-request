@@ -19,7 +19,9 @@ Use the standard Python installation method::
 
   pip3 install git-pull-request
 
-Altho it might not be up to date with the `latest code on GitHub <https://github.com/jd/git-pull-request>`_, `Fedora <https://getfedora.org>`_ 28+ users can also download straight via package manager `DNF <https://fedoraproject.org/wiki/DNF>`_::
+Although it might not be up to date with the `latest code on GitHub <https://github.com/jd/git-pull-request>`_
+`Fedora <https://getfedora.org>`_ 28+ users can also download straight via package manager 
+`DNF <https://fedoraproject.org/wiki/DNF>`_::
 
   sudo dnf install git-pull-request
 
