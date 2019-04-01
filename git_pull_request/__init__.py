@@ -550,6 +550,7 @@ def main():
         )
     except Exception:
         LOG.error("Unable to send pull request", exc_info=True)
+        return 128
 
 
 if __name__ == '__main__':
