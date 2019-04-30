@@ -28,6 +28,8 @@ from uuid import uuid4
 
 import daiquiri
 
+from git_pull_request import pagure
+
 import github
 
 
@@ -111,11 +113,11 @@ def git_get_remote_branch_for_branch(branch):
     return branch
 
 
-def get_github_hostname_user_repo_from_url(url):
-    """Return hostname, user and repository to fork from.
+def get_hosttype_hostname_user_repo_from_url(url):
+    """Return hostype, hostname, user and repository to fork from.
 
     :param url: The URL to parse
-    :return: hostname, user, repository
+    :return: hosttype, hostname, user, repository
     """
     parsed = parse.urlparse(url)
     if parsed.netloc == '':
@@ -126,8 +128,13 @@ def get_github_hostname_user_repo_from_url(url):
     else:
         path = parsed.path[1:].rstrip('/')
         host = parsed.netloc
-    user, repo = path.split("/", 1)
-    return host, user, repo[:-4] if repo.endswith('.git') else repo
+    if pagure.is_pagure(host):
+        hosttype = "pagure"
+        user, repo = None, path
+    else:
+        hosttype = "github"
+        user, repo = path.split("/", 1)
+    return hosttype, host, user, repo[:-4] if repo.endswith('.git') else repo
 
 
 def split_and_remove_empty_lines(s):
@@ -223,11 +230,11 @@ def git_pull_request(target_remote=None, target_branch=None,
 
     LOG.debug("Remote URL for remote `%s' is `%s'", target_remote, target_url)
 
-    hostname, user_to_fork, reponame_to_fork = (
-        get_github_hostname_user_repo_from_url(target_url)
+    hosttype, hostname, user_to_fork, reponame_to_fork = (
+        get_hosttype_hostname_user_repo_from_url(target_url)
     )
-    LOG.debug("GitHub user and repository to fork: %s/%s on %s",
-              user_to_fork, reponame_to_fork, hostname)
+    LOG.debug("%s user and repository to fork: %s/%s on %s",
+              hosttype.capitalize(), user_to_fork, reponame_to_fork, hostname)
 
     user, password = get_login_password(hostname)
     if not user or not password:
@@ -240,15 +247,19 @@ def git_pull_request(target_remote=None, target_branch=None,
         )
         return 35
 
-    LOG.debug("Found GitHub user: `%s' password: <redacted>", user)
+    LOG.debug("Found %s user: `%s' password: <redacted>", hostname, user)
 
     kwargs = {}
     if hostname != "github.com":
         kwargs['base_url'] = "https://" + hostname + "/api/v3"
         LOG.debug("Using API base url `%s'", kwargs['base_url'])
 
-    g = github.Github(user, password, **kwargs)
-    repo = g.get_user(user_to_fork).get_repo(reponame_to_fork)
+    if hosttype == "pagure":
+        g = pagure.Client(hostname, user, password, reponame_to_fork)
+        repo = g.get_repo(reponame_to_fork)
+    else:
+        g = github.Github(user, password, **kwargs)
+        repo = g.get_user(user_to_fork).get_repo(reponame_to_fork)
 
     if download is not None:
         download_pull_request(g, repo, target_remote, download)
