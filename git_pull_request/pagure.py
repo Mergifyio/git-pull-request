@@ -20,12 +20,6 @@ LOG = daiquiri.getLogger("git-pull-request")
 
 
 def is_pagure(hostname):
-    # Do not query known hosts
-    if hostname in ("github.com", "example.com"):
-        return False
-    elif hostname in ("pagure.io", "git.centos.org", "src.fedoraproject.org"):
-        return True
-    # Else, detect pagure with the version api
     return requests.get("https://%s/api/0/-/version" % hostname).ok
 
 

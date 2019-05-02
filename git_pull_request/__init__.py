@@ -113,6 +113,28 @@ def git_get_remote_branch_for_branch(branch):
     return branch
 
 
+def git_get_config_hosttype():
+    return _run_shell_command(
+        ["git", "config", "git-pull-request.hosttype"],
+        output=True, raise_on_error=False)
+
+
+def git_set_config_hosttype(hosttype):
+    _run_shell_command(
+        ["git", "config", "git-pull-request.hosttype", hosttype])
+
+
+def get_hosttype(host):
+    hosttype = git_get_config_hosttype()
+    if hosttype == "":
+        if pagure.is_pagure(host):
+            hosttype = "pagure"
+        else:
+            hosttype = "github"
+        git_set_config_hosttype(hosttype)
+    return hosttype
+
+
 def get_hosttype_hostname_user_repo_from_url(url):
     """Return hostype, hostname, user and repository to fork from.
 
@@ -128,11 +150,10 @@ def get_hosttype_hostname_user_repo_from_url(url):
     else:
         path = parsed.path[1:].rstrip('/')
         host = parsed.netloc
-    if pagure.is_pagure(host):
-        hosttype = "pagure"
+    hosttype = get_hosttype(host)
+    if hosttype == "pagure":
         user, repo = None, path
     else:
-        hosttype = "github"
         user, repo = path.split("/", 1)
     return hosttype, host, user, repo[:-4] if repo.endswith('.git') else repo
 
@@ -250,14 +271,13 @@ def git_pull_request(target_remote=None, target_branch=None,
     LOG.debug("Found %s user: `%s' password: <redacted>", hostname, user)
 
     kwargs = {}
-    if hostname != "github.com":
-        kwargs['base_url'] = "https://" + hostname + "/api/v3"
-        LOG.debug("Using API base url `%s'", kwargs['base_url'])
-
     if hosttype == "pagure":
         g = pagure.Client(hostname, user, password, reponame_to_fork)
         repo = g.get_repo(reponame_to_fork)
     else:
+        if hostname != "github.com":
+            kwargs['base_url'] = "https://" + hostname + "/api/v3"
+            LOG.debug("Using API base url `%s'", kwargs['base_url'])
         g = github.Github(user, password, **kwargs)
         repo = g.get_user(user_to_fork).get_repo(reponame_to_fork)
 
