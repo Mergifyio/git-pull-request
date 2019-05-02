@@ -39,32 +39,49 @@ class TestRunShellCommand(unittest.TestCase):
                                raise_on_error=False)
 
 
-class TestStuff(unittest.TestCase):
-    def test_get_github_user_repo_from_url(self):
+class BaseTestGitRepo(fixtures.TestWithFixtures):
+    def setUp(self):
+        self.tempdir = self.useFixture(fixtures.TempDir()).path
+        os.chdir(self.tempdir)
+        gpr._run_shell_command(["git", "init", "--quiet"])
+        gpr.git_set_config_hosttype("github")
+
+
+class TestStuff(BaseTestGitRepo):
+    def test_get_hosttype_user_repo_from_url(self):
         self.assertEqual(
-            ("github.com", "jd", "git-pull-request"),
-            gpr.get_github_hostname_user_repo_from_url(
+            ("github", "github.com", "jd", "git-pull-request"),
+            gpr.get_hosttype_hostname_user_repo_from_url(
                 "https://github.com/jd/git-pull-request.git"))
         self.assertEqual(
-            ("github.com", "jd", "git-pull-request"),
-            gpr.get_github_hostname_user_repo_from_url(
+            ("github", "github.com", "jd", "git-pull-request"),
+            gpr.get_hosttype_hostname_user_repo_from_url(
                 "git@github.com:jd/git-pull-request.git"))
         self.assertEqual(
-            ("github.com", "jd", "git-pull-request"),
-            gpr.get_github_hostname_user_repo_from_url(
+            ("github", "github.com", "jd", "git-pull-request"),
+            gpr.get_hosttype_hostname_user_repo_from_url(
                 "git://github.com/jd/git-pull-request.git"))
         self.assertEqual(
-            ("example.com", "jd", "git-pull-request"),
-            gpr.get_github_hostname_user_repo_from_url(
+            ("github", "example.com", "jd", "git-pull-request"),
+            gpr.get_hosttype_hostname_user_repo_from_url(
                 "https://example.com/jd/git-pull-request.git"))
         self.assertEqual(
-            ("github.com", "jd", "git-pull-request"),
-            gpr.get_github_hostname_user_repo_from_url(
+            ("github", "github.com", "jd", "git-pull-request"),
+            gpr.get_hosttype_hostname_user_repo_from_url(
                 "git@github.com:jd/git-pull-request"))
         self.assertEqual(
-            ("example.com", "jd", "git-pull-request"),
-            gpr.get_github_hostname_user_repo_from_url(
+            ("github", "example.com", "jd", "git-pull-request"),
+            gpr.get_hosttype_hostname_user_repo_from_url(
                 "https://example.com/jd/git-pull-request"))
+        gpr.git_set_config_hosttype("pagure")
+        self.assertEqual(
+            ("pagure", "pagure.io", None, "pagure"),
+            gpr.get_hosttype_hostname_user_repo_from_url(
+                "https://pagure.io/pagure"))
+        self.assertEqual(
+            ("pagure", "src.fedoraproject.org", None, "rpms/git-pull-request"),
+            gpr.get_hosttype_hostname_user_repo_from_url(
+                "https://src.fedoraproject.org/rpms/git-pull-request"))
 
 
 class TestGitCommand(fixtures.TestWithFixtures):
@@ -231,21 +248,21 @@ class TestExceptionFormatting(unittest.TestCase):
             gpr._format_github_exception("create pull request", e))
 
 
-class TestGithubHostnameUserRepoFromUrl(unittest.TestCase):
+class TestGithubHostnameUserRepoFromUrl(BaseTestGitRepo):
     def test_git_clone_url(self):
-        expected = ("example.com", "jd", "git-pull-request")
+        expected = ("github", "example.com", "jd", "git-pull-request")
 
         self.assertEqual(
             expected,
-            gpr.get_github_hostname_user_repo_from_url(
+            gpr.get_hosttype_hostname_user_repo_from_url(
                 "https://example.com/jd/git-pull-request"))
 
         self.assertEqual(
             expected,
-            gpr.get_github_hostname_user_repo_from_url(
+            gpr.get_hosttype_hostname_user_repo_from_url(
                 "https://example.com/jd/git-pull-request.git"))
 
         self.assertEqual(
             expected,
-            gpr.get_github_hostname_user_repo_from_url(
+            gpr.get_hosttype_hostname_user_repo_from_url(
                 "https://example.com/jd/git-pull-request/"))

@@ -9,7 +9,7 @@
 .. image:: https://badge.fury.io/py/git-pull-request.svg
     :target: https://badge.fury.io/py/git-pull-request
 
-git-pull-request is a command line tool to send GitHub pull-request from your
+git-pull-request is a command line tool to send GitHub or Pagure_ pull-request from your
 terminal.
 
 Installation
@@ -20,18 +20,23 @@ Use the standard Python installation method::
   pip3 install git-pull-request
 
 Although it might not be up to date with the `latest code on GitHub <https://github.com/jd/git-pull-request>`_
-`Fedora <https://getfedora.org>`_ 28+ users can also download straight via package manager 
+`Fedora <https://getfedora.org>`_ 28+ users can also download straight via package manager
 `DNF <https://fedoraproject.org/wiki/DNF>`_::
 
   sudo dnf install git-pull-request
 
 Usage
 =====
-You need to write your GitHub credentials into your `~/.netrc file`. In case you
-have 2FA enabled, make sure to replace your password by a
+You need to write your credentials into your `~/.netrc file`. In case you
+have 2FA enabled for GitHub, make sure to replace your password by a
 `Personal access token <https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/>`_::
 
   machine github.com login jd password f00b4r
+
+For Pagure, you need to create an API key by visiting your `settings <https://pagure.io/settings#api-keys>`_
+and requesting the `Fork a project` and `Modify an existing project` ACLs::
+
+  machine pagure.io login tristanc password $your-api-token
 
 Note: since credentials are stored in plain text, you should encrypt your `$HOME`
 directory to improve security.
@@ -90,3 +95,4 @@ calling `hub pull-request` would just open a new pull-request.
 git-pull-request wraps all of these operations into one convenient tool.
 
 .. _hub: https://hub.github.com/
+.. _Pagure: https://pagure.io/pagure
