@@ -27,20 +27,6 @@ Although it might not be up to date with the `latest code on GitHub <https://git
 
 Usage
 =====
-You need to write your credentials into your `~/.netrc file`. In case you
-have 2FA enabled for GitHub, make sure to replace your password by a
-`Personal access token <https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/>`_::
-
-  machine github.com login jd password f00b4r
-
-For Pagure, you need to create an API key by visiting your `settings <https://pagure.io/settings#api-keys>`_
-and requesting the `Fork a project` and `Modify an existing project` ACLs::
-
-  machine pagure.io login tristanc password $your-api-token
-
-Note: since credentials are stored in plain text, you should encrypt your `$HOME`
-directory to improve security.
-
 Once you've made your commits into a branch, just type::
 
   git pull-request
@@ -60,6 +46,16 @@ been opened for your current working branch.
 
 Workflow advice
 ===============
+
+Caching Credentials
+-------------------
+
+GitHub has a good documentation about using `git credential
+<https://help.github.com/en/articles/caching-your-github-password-in-git>`_.
+
+Creating Branches
+-----------------
+
 When sending pull-requests, it's preferable to do so from your own branch. You
 can create your own branch from `master` by doing::
 
@@ -86,8 +82,9 @@ Difference with hub
 The wrapper `hub`_ provides `hub fork` and `hub pull-request` as
 command line tools to fork and create pull-requests.
 
-Unfortunately, it's hard to combine these tools in an automated implementation for a 
-complete workflow. 
+Unfortunately, it's hard to combine these tools in an automated implementation for a
+complete workflow.
+
 For example:
 If you need to update your pull-request, there's no way to identify existing pull requests, so
 calling `hub pull-request` would just open a new pull-request.

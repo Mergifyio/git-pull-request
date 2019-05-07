@@ -16,7 +16,6 @@ import argparse
 import glob
 import itertools
 import logging
-import netrc
 import operator
 import os
 import shutil
@@ -50,29 +49,29 @@ def _run_shell_command(cmd, output=None, raise_on_error=True):
         return out[0].strip().decode()
 
 
-def get_login_password(site_name="github.com",
-                       netrc_file="~/.netrc",
-                       git_credential_file="~/.git-credentials"):
-    """Read a .netrc file and return login/password for LWN."""
-    try:
-        n = netrc.netrc(os.path.expanduser(netrc_file))
-    except OSError:
-        pass
-    else:
-        if site_name in n.hosts:
-            return n.hosts[site_name][0], n.hosts[site_name][2]
-
-    try:
-        with open(os.path.expanduser(git_credential_file)) as f:
-            for line in f:
-                parsed = parse.urlparse(line.strip())
-                if parsed.hostname == site_name:
-                    return (parse.unquote(parsed.username),
-                            parse.unquote(parsed.password))
-    except OSError:
-        pass
-
-    return None, None
+def get_login_password(protocol="https", host="github.com"):
+    """Get login/password from git credential."""
+    subp = subprocess.Popen(["git", "credential", "fill"],
+                            stdin=subprocess.PIPE,
+                            stdout=subprocess.PIPE)
+    # TODO add path support
+    request = "protocol={}\nhost={}\n".format(protocol, host).encode()
+    username = None
+    password = None
+    stdout, stderr = subp.communicate(input=request)
+    ret = subp.wait()
+    if ret != 0:
+        LOG.error("git credential returned exited with status %d", ret)
+        return None, None
+    for line in stdout.split(b'\n'):
+        key, _, value = line.partition(b"=")
+        if key == b"username":
+            username = value.decode()
+        elif key == b"password":
+            password = value.decode()
+        if username and password:
+            break
+    return username, password
 
 
 def git_remote_matching_url(url):
@@ -257,14 +256,12 @@ def git_pull_request(target_remote=None, target_branch=None,
     LOG.debug("%s user and repository to fork: %s/%s on %s",
               hosttype.capitalize(), user_to_fork, reponame_to_fork, hostname)
 
-    user, password = get_login_password(hostname)
-    if not user or not password:
+    user, password = get_login_password(host=hostname)
+    if not user and not password:
         LOG.critical(
-            "Unable to find your GitHub credentials for %s.\n"
-            "Make sure you have a line like this in your ~/.netrc file:\n"
-            "machine %s login <login> password <pwd>, "
-            "or use git store credentials",
-            hostname, hostname
+            "Unable to find your credentials for %s.\n"
+            "Make sure you have a git credential working.",
+            hostname,
         )
         return 35
 
