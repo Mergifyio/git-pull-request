@@ -267,11 +267,11 @@ def git_pull_request(target_remote=None, target_branch=None,
 
     LOG.debug("Found %s user: `%s' password: <redacted>", hostname, user)
 
-    kwargs = {}
     if hosttype == "pagure":
         g = pagure.Client(hostname, user, password, reponame_to_fork)
         repo = g.get_repo(reponame_to_fork)
     else:
+        kwargs = {}
         if hostname != "github.com":
             kwargs['base_url'] = "https://" + hostname + "/api/v3"
             LOG.debug("Using API base url `%s'", kwargs['base_url'])
@@ -281,7 +281,7 @@ def git_pull_request(target_remote=None, target_branch=None,
     if download is not None:
         download_pull_request(g, repo, target_remote, download)
     else:
-        fork_and_push_pull_request(g, repo, rebase, target_remote,
+        fork_and_push_pull_request(g, hosttype, repo, rebase, target_remote,
                                    target_branch, branch, user, title, message,
                                    comment,
                                    force_editor, tag_previous_revision,
@@ -367,9 +367,9 @@ def preserve_older_revision(branch, remote_to_push):
     _run_shell_command(["git", "tag", "-d", tag])
 
 
-def fork_and_push_pull_request(g, repo_to_fork, rebase, target_remote,
-                               target_branch, branch, user, title, message,
-                               comment,
+def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
+                               target_remote, target_branch, branch, user,
+                               title, message, comment,
                                force_editor, tag_previous_revision, dont_fork):
 
     g_user = g.get_user()
@@ -387,7 +387,7 @@ def fork_and_push_pull_request(g, repo_to_fork, rebase, target_remote,
             LOG.debug("Found forked repository already in remote as `%s'",
                       remote_to_push)
         else:
-            remote_to_push = "github"
+            remote_to_push = hosttype
             _run_shell_command(
                 ["git", "remote", "add",
                  remote_to_push, repo_forked.clone_url])
