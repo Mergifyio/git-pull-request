@@ -74,6 +74,20 @@ def get_login_password(protocol="https", host="github.com"):
     return username, password
 
 
+def approve_login_password(user, password,
+                           host="github.com", protocol="https"):
+    """Tell git to approve the credential."""
+    subp = subprocess.Popen(["git", "credential", "approve"],
+                            stdin=subprocess.PIPE,
+                            stdout=subprocess.PIPE)
+    request = "protocol={}\nhost={}\nusername={}\npassword={}\n".format(
+        protocol, host, user, password).encode()
+    subp.communicate(input=request)
+    ret = subp.wait()
+    if ret != 0:
+        LOG.error("git credential returned exited with status %d", ret)
+
+
 def git_remote_matching_url(url):
     remotes = _run_shell_command(["git", "remote", "-v"],
                                  output=True).split('\n')
@@ -286,6 +300,7 @@ def git_pull_request(target_remote=None, target_branch=None,
                                    comment,
                                    force_editor, tag_previous_revision,
                                    dont_fork)
+    approve_login_password(host=hostname, user=user, password=password)
 
 
 def download_pull_request(g, repo, target_remote, pull_number):
