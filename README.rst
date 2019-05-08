@@ -56,6 +56,13 @@ GitHub has a good documentation about using `git credential
 The full documentation is available on the `git-scm.com website
 <https://git-scm.com/book/en/v2/Git-Tools-Credential-Storage>`_.
 
+Pagure Token
+------------
+
+Pagure uses API key, you need to create one by visiting `your settings
+<https://pagure.io/settings#nav-api-tab>`_
+and requesting the `Fork a project` and `Modify an existing project` ACL.
+
 Creating Branches
 -----------------
 
