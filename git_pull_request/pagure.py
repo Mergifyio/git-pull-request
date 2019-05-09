@@ -91,12 +91,15 @@ class Client:
             options = {"pull_requests": True}
             self.post("%s/options/update" % project, options)
 
-    def create_fork(self, _):
-        class ForkedRepo:
-            clone_url = "ssh://git@%s/forks/%s/%s.git" % (
-                self.host, self.user, self.reponame_to_fork)
-            html_url = "https://%s/%s" % (self.host, self.fork_path)
+    def get_repo_urls(self, reponame):
+        urls = self.get("{}/git/urls".format(reponame))["urls"]
+        if "ssh" not in urls:
+            raise RuntimeError("%s: ssh url is missing" % reponame)
+        return type('ForkedRepo', (object,), dict(
+            clone_url=urls["ssh"].format(username=self.user),
+            html_url=urls["git"]))
 
+    def create_fork(self, _):
         LOG.debug("check if the fork already exists")
         if not self.get(self.fork_path, error_ok=True):
             LOG.info("requesting a fork creation")
@@ -109,7 +112,7 @@ class Client:
             self.post("fork",
                       {"repo": repo, "namespace": namespace, "wait": True})
         self.enable_pull_request(self.fork_path)
-        return ForkedRepo
+        return self.get_repo_urls(self.fork_path)
 
     def get_pulls(self, base, head):
         class Pull:
