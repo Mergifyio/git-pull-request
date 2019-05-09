@@ -53,6 +53,9 @@ Caching Credentials
 GitHub has a good documentation about using `git credential
 <https://help.github.com/en/articles/caching-your-github-password-in-git>`_.
 
+The full documentation is available on the `git-scm.com website
+<https://git-scm.com/book/en/v2/Git-Tools-Credential-Storage>`_.
+
 Creating Branches
 -----------------
 
