@@ -187,7 +187,7 @@ def parse_pr_message(message):
 
 def git_get_commit_body(commit):
     return _run_shell_command(
-        ["git", "show", "-q", "--format=%b", commit],
+        ["git", "show", "-q", "--format=%b", commit, '--'],
         output=True)
 
 
