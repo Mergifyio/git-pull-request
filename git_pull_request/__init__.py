@@ -228,7 +228,8 @@ def git_pull_request(target_remote=None, target_branch=None,
                      force_editor=False,
                      download=None,
                      tag_previous_revision=False,
-                     dont_fork=True):
+                     dont_fork=True,
+                     setup_only=False):
     branch = git_get_branch_name()
     if not branch:
         LOG.critical("Unable to find current branch")
@@ -299,7 +300,7 @@ def git_pull_request(target_remote=None, target_branch=None,
                                    target_branch, branch, user, title, message,
                                    comment,
                                    force_editor, tag_previous_revision,
-                                   dont_fork)
+                                   dont_fork, setup_only)
     approve_login_password(host=hostname, user=user, password=password)
 
 
@@ -385,7 +386,8 @@ def preserve_older_revision(branch, remote_to_push):
 def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
                                target_remote, target_branch, branch, user,
                                title, message, comment,
-                               force_editor, tag_previous_revision, dont_fork):
+                               force_editor, tag_previous_revision, dont_fork,
+                               setup_only):
 
     g_user = g.get_user()
 
@@ -408,6 +410,11 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
                  remote_to_push, repo_forked.clone_url])
             LOG.info("Added forked repository as remote `%s'", remote_to_push)
         head = "{}:{}".format(user, branch)
+
+    if setup_only:
+        LOG.info("Fetch existing branches of remote `%s`", remote_to_push)
+        _run_shell_command(["git", "fetch", remote_to_push])
+        return
 
     if rebase:
         _run_shell_command(["git", "remote", "update", target_remote])
@@ -554,6 +561,12 @@ def main():
         default=False,
         help="Don't fork to create the pull-request"
     )
+    parser.add_argument(
+        "--setup-only",
+        action="store_true",
+        default=False,
+        help="Just setup the fork repo"
+    )
 
     args = parser.parse_args()
 
@@ -577,7 +590,8 @@ def main():
             force_editor=args.force_editor,
             download=args.download,
             tag_previous_revision=args.tag_previous_revision,
-            dont_fork=args.no_fork
+            dont_fork=args.no_fork,
+            setup_only=args.setup_only
         )
     except Exception:
         LOG.error("Unable to send pull request", exc_info=True)
