@@ -266,3 +266,31 @@ class TestGithubHostnameUserRepoFromUrl(BaseTestGitRepo):
             expected,
             gpr.get_hosttype_hostname_user_repo_from_url(
                 "https://example.com/jd/git-pull-request/"))
+
+
+class TestGitConfig(fixtures.TestWithFixtures):
+    def test_get_remote_for_branch(self):
+        self.tempdir = self.useFixture(fixtures.TempDir()).path
+        os.chdir(self.tempdir)
+        gpr._run_shell_command(["git", "init", "--quiet"])
+        gpr._run_shell_command(["git", "remote", "add", "origin",
+                                "https://github.com/jd/git-pull-request.git"])
+        gpr._run_shell_command(["git", "config", "branch.master.merge",
+                                "refs/heads/master"])
+        gpr._run_shell_command(["git", "config", "branch.master.remote",
+                                "origin"])
+        gpr._run_shell_command(["git", "config", "user.name", "nobody"])
+        gpr._run_shell_command(["git", "config", "user.email",
+                                "nobody@example.com"])
+
+        gpr._run_shell_command(["git", "config",
+                                "git-pull-request.setup-only", "yes"])
+        gpr._run_shell_command(["git", "config",
+                                "git-pull-request.fork", "never"])
+        gpr._run_shell_command(["git", "config",
+                                "git-pull-request.target-branch",
+                                "awesome_branch"])
+        args = gpr.build_parser().parse_args([])
+        self.assertEqual(True, args.setup_only)
+        self.assertEqual("never", args.fork)
+        self.assertEqual("awesome_branch", args.target_branch)
