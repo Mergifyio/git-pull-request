@@ -228,7 +228,7 @@ def git_pull_request(target_remote=None, target_branch=None,
                      force_editor=False,
                      download=None,
                      tag_previous_revision=False,
-                     dont_fork=True,
+                     fork=True,
                      setup_only=False):
     branch = git_get_branch_name()
     if not branch:
@@ -300,7 +300,7 @@ def git_pull_request(target_remote=None, target_branch=None,
                                    target_branch, branch, user, title, message,
                                    comment,
                                    force_editor, tag_previous_revision,
-                                   dont_fork, setup_only)
+                                   fork, setup_only)
     approve_login_password(host=hostname, user=user, password=password)
 
 
@@ -386,18 +386,30 @@ def preserve_older_revision(branch, remote_to_push):
 def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
                                target_remote, target_branch, branch, user,
                                title, message, comment,
-                               force_editor, tag_previous_revision, dont_fork,
+                               force_editor, tag_previous_revision, fork,
                                setup_only):
 
     g_user = g.get_user()
 
-    if dont_fork:
-        remote_to_push = target_remote
-        head = "{}:{}".format(repo_to_fork.owner.login, branch)
-    else:
-        repo_forked = g_user.create_fork(repo_to_fork)
-        LOG.info("Forked repository: %s", repo_forked.html_url)
+    forked = False
+    if fork in ["always", "auto"]:
+        try:
+            repo_forked = g_user.create_fork(repo_to_fork)
+        except github.GithubException as e:
+            if (fork == "auto" and e.status == 403 and
+                    "forking is disabled" in e.data["message"]):
+                forked = False
+                LOG.info("Forking is disabled on target repository, "
+                         "using base repository")
+            else:
+                LOG.error("Forking is disabled on target repository, "
+                          "can't fork", exc_info=True)
+                sys.exit(1)
+        else:
+            forked = True
+            LOG.info("Forked repository: %s", repo_forked.html_url)
 
+    if forked:
         remote_to_push = git_remote_matching_url(repo_forked.clone_url)
 
         if remote_to_push:
@@ -410,6 +422,9 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
                  remote_to_push, repo_forked.clone_url])
             LOG.info("Added forked repository as remote `%s'", remote_to_push)
         head = "{}:{}".format(user, branch)
+    else:
+        remote_to_push = target_remote
+        head = "{}:{}".format(repo_to_fork.owner.login, branch)
 
     if setup_only:
         LOG.info("Fetch existing branches of remote `%s`", remote_to_push)
@@ -446,7 +461,7 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
     _run_shell_command(["git", "push", "-f", remote_to_push, branch])
 
     pulls = list(repo_to_fork.get_pulls(base=target_branch,
-                                        head=user + ":" + branch))
+                                        head=head))
     if pulls:
         for pull in pulls:
             LOG.info("Pull-request updated:\n  %s", pull.html_url)
@@ -555,12 +570,24 @@ def main():
         default=False,
         help="Preserve older revision when pushing"
     )
-    parser.add_argument(
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(
+        "--fork",
+        default="auto",
+        choices=["always", "never", "auto"],
+        help=("Fork behavior to create the pull-request "
+              "(auto: when repository can't be cloned, "
+              "always: always try to fork it "
+              "never: always use base repository)")
+    )
+    group.add_argument(
         "--no-fork",
-        action="store_true",
-        default=False,
+        dest="fork",
+        action="store_const",
+        const="never",
         help="Don't fork to create the pull-request"
     )
+
     parser.add_argument(
         "--setup-only",
         action="store_true",
@@ -590,7 +617,7 @@ def main():
             force_editor=args.force_editor,
             download=args.download,
             tag_previous_revision=args.tag_previous_revision,
-            dont_fork=args.no_fork,
+            fork=args.fork,
             setup_only=args.setup_only
         )
     except Exception:
