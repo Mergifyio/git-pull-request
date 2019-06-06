@@ -446,7 +446,7 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
     _run_shell_command(["git", "push", "-f", remote_to_push, branch])
 
     pulls = list(repo_to_fork.get_pulls(base=target_branch,
-                                        head=user + ":" + branch))
+                                        head=head))
     if pulls:
         for pull in pulls:
             LOG.info("Pull-request updated:\n  %s", pull.html_url)
