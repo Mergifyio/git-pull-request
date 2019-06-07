@@ -87,6 +87,28 @@ current branch and checking it out. You can then use it like that::
   Branch foobar set up to track remote branch master from origin.
   Switched to a new branch 'foobar'
 
+Configuration via `git config`
+------------------------------
+
+Most `git-pull-request` command line arguments can be store into your git
+configuration.
+
+For a particular repository, if you get tired of using::
+
+  $ git pull-request --fork never
+
+You can set the option with git and use the command without any arguments::
+
+  $ git config git-pull-request.fork never
+  $ git pull-request
+
+You can also set the option globally to have a custom default for all your
+repositories with::
+
+  $ git config --global git-pull-request.fork always
+  $ git pull-request
+
+
 Difference with hub
 ===================
 The wrapper `hub`_ provides `hub fork` and `hub pull-request` as
