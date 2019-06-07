@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import argparse
+import distutils.util
 import glob
 import itertools
 import logging
@@ -100,6 +101,26 @@ def git_remote_url(remote="origin"):
     return _run_shell_command(
         ["git", "config", "--get", "remote." + remote + ".url"],
         output=True)
+
+
+def git_get_config(option, default):
+    out = _run_shell_command(
+        ["git", "config", "--get", "git-pull-request." + option],
+        output=True, raise_on_error=False)
+    return out or default
+
+
+def git_config_add_argument(parser, option, *args, **kwargs):
+    default = kwargs.get("default")
+    isboolean = kwargs.get("action") in ["store_true", "store_false"]
+    if isboolean and default is None:
+        default = False
+    default = git_get_config(option[2:], default)
+    if default:
+        if isboolean:
+            default = distutils.util.strtobool(default)
+        kwargs["default"] = default
+    return parser.add_argument(option, *args, **kwargs)
 
 
 def git_get_branch_name():
@@ -532,7 +553,7 @@ def _format_github_exception(action, exc):
     )
 
 
-def main():
+def build_parser():
     parser = argparse.ArgumentParser(
         description='Send GitHub pull-request.'
     )
@@ -542,20 +563,21 @@ def main():
     parser.add_argument("--debug",
                         action='store_true',
                         help="Enabled debugging.")
-    parser.add_argument("--target-remote",
-                        help="Remote to send a pull-request to. "
-                        "Default is auto-detected from .git/config.")
-    parser.add_argument("--target-branch",
-                        help="Branch to send a pull-request to. "
-                        "Default is auto-detected from .git/config.")
+    git_config_add_argument(parser, "--target-remote",
+                            help="Remote to send a pull-request to. "
+                            "Default is auto-detected from .git/config.")
+    git_config_add_argument(parser, "--target-branch",
+                            help="Branch to send a pull-request to. "
+                            "Default is auto-detected from .git/config.")
     parser.add_argument("--title",
                         help="Title of the pull request.")
     parser.add_argument("--message", "-m",
                         help="Message of the pull request.")
-    parser.add_argument("--no-rebase", "-R",
-                        action="store_true",
-                        help="Don't rebase branch before pushing.")
-    parser.add_argument(
+    git_config_add_argument(parser, "--no-rebase", "-R",
+                            action="store_true",
+                            help="Don't rebase branch before pushing.")
+    git_config_add_argument(
+        parser,
         "--force-editor",
         action="store_true",
         default=False,
@@ -564,14 +586,16 @@ def main():
         "--comment", "-C",
         help="Comment to publish when updating the pull-request"
     )
-    parser.add_argument(
+    git_config_add_argument(
+        parser,
         "--tag-previous-revision",
         action="store_true",
         default=False,
         help="Preserve older revision when pushing"
     )
     group = parser.add_mutually_exclusive_group()
-    group.add_argument(
+    git_config_add_argument(
+        group,
         "--fork",
         default="auto",
         choices=["always", "never", "auto"],
@@ -580,7 +604,8 @@ def main():
               "always: always try to fork it "
               "never: always use base repository)")
     )
-    group.add_argument(
+    git_config_add_argument(
+        group,
         "--no-fork",
         dest="fork",
         action="store_const",
@@ -588,14 +613,18 @@ def main():
         help="Don't fork to create the pull-request"
     )
 
-    parser.add_argument(
+    git_config_add_argument(
+        parser,
         "--setup-only",
         action="store_true",
         default=False,
         help="Just setup the fork repo"
     )
+    return parser
 
-    args = parser.parse_args()
+
+def main():
+    args = build_parser().parse_args()
 
     daiquiri.setup(
         outputs=(
