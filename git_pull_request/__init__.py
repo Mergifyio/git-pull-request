@@ -443,9 +443,11 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
                  remote_to_push, repo_forked.clone_url])
             LOG.info("Added forked repository as remote `%s'", remote_to_push)
         head = "{}:{}".format(user, branch)
+        remote_branch = branch
     else:
+        remote_branch = "{}/{}".format(g_user.login, branch)
         remote_to_push = target_remote
-        head = "{}:{}".format(repo_to_fork.owner.login, branch)
+        head = "{}:{}".format(repo_to_fork.owner.login, remote_branch)
 
     if setup_only:
         LOG.info("Fetch existing branches of remote `%s`", remote_to_push)
@@ -476,10 +478,14 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
                 "resolved.")
             return 37
 
-    LOG.info("Force-pushing branch `%s' to remote `%s'",
-             branch, remote_to_push)
+    LOG.info("Force-pushing branch `%s' to remote `%s/%s'",
+             branch, remote_to_push, remote_branch)
 
-    _run_shell_command(["git", "push", "-f", remote_to_push, branch])
+    _run_shell_command([
+        "git", "push", "-f",
+        remote_to_push,
+        "{}:{}".format(branch, remote_branch),
+    ])
 
     pulls = list(repo_to_fork.get_pulls(base=target_branch,
                                         head=head))
