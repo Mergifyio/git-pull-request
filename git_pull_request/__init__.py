@@ -97,10 +97,10 @@ def git_remote_matching_url(url):
             return remote.partition("\t")[0]
 
 
-def git_remote_url(remote="origin"):
+def git_remote_url(remote="origin", raise_on_error=True):
     return _run_shell_command(
         ["git", "config", "--get", "remote." + remote + ".url"],
-        output=True)
+        output=True, raise_on_error=raise_on_error)
 
 
 def git_get_config(option, default):
@@ -249,6 +249,7 @@ def git_pull_request(target_remote=None, target_branch=None,
                      rebase=True,
                      force_editor=False,
                      download=None,
+                     download_setup=False,
                      tag_previous_revision=False,
                      fork=True,
                      setup_only=False,
@@ -317,7 +318,8 @@ def git_pull_request(target_remote=None, target_branch=None,
         repo = g.get_user(user_to_fork).get_repo(reponame_to_fork)
 
     if download is not None:
-        download_pull_request(g, repo, target_remote, download)
+        download_pull_request(g, repo, target_remote,
+                              download, download_setup)
     else:
         fork_and_push_pull_request(g, hosttype, repo, rebase, target_remote,
                                    target_branch, branch, user, title, message,
@@ -327,10 +329,14 @@ def git_pull_request(target_remote=None, target_branch=None,
     approve_login_password(host=hostname, user=user, password=password)
 
 
-def download_pull_request(g, repo, target_remote, pull_number):
+def download_pull_request(g, repo, target_remote, pull_number,
+                          setup_remote):
     pull = repo.get_pull(pull_number)
-    local_branch_name = "pull/%d-%s-%s" % (pull.number, pull.user.login,
-                                           pull.head.ref)
+    if setup_remote:
+        local_branch_name = pull.head.ref
+    else:
+        local_branch_name = "pull/%d-%s-%s" % (pull.number, pull.user.login,
+                                               pull.head.ref)
     target_ref = "pull/%d/head" % pull.number
 
     _run_shell_command(["git", "fetch", target_remote, target_ref])
@@ -341,6 +347,18 @@ def download_pull_request(g, repo, target_remote, pull_number):
                             "FETCH_HEAD"])
     else:
         _run_shell_command(["git", "reset", "--hard", "FETCH_HEAD"])
+
+    if setup_remote:
+        remote_name = "github-%s" % pull.user.login
+        remote_branch = pull.head.ref
+        remote_to_push = remote_name + "/" + remote_branch
+        remote = git_remote_url(remote_name, raise_on_error=False)
+        if not remote:
+            _run_shell_command(["git", "remote", "add", remote_name,
+                                pull.head.repo.clone_url])
+        _run_shell_command(["git", "fetch", remote_name])
+        _run_shell_command(["git", "branch", "-u", remote_to_push,
+                            local_branch_name])
 
 
 def edit_file_get_content_and_remove(filename):
@@ -567,13 +585,29 @@ def _format_github_exception(action, exc):
     )
 
 
+class DownloadAndSetupAction(argparse.Action):
+    def __call__(self, parser, namespace, values, option_strings=None):
+        setattr(namespace, "download", values)
+        if self.dest == "download":
+            setattr(namespace, "download_setup", False)
+        else:
+            setattr(namespace, "download_setup", True)
+
+
 def build_parser():
     parser = argparse.ArgumentParser(
         description='Send GitHub pull-request.'
     )
     parser.add_argument("--download", "-d",
                         type=int,
+                        action=DownloadAndSetupAction,
                         help="Checkout a pull request")
+    parser.add_argument("--download-and-setup", "-D",
+                        type=int,
+                        dest="download_setup",
+                        action=DownloadAndSetupAction,
+                        help=("Checkout a pull request and setup remote "
+                              "to be able to repush it"))
     parser.add_argument("--debug",
                         action='store_true',
                         help="Enabled debugging.")
@@ -661,6 +695,7 @@ def main():
             rebase=not args.no_rebase,
             force_editor=args.force_editor,
             download=args.download,
+            download_setup=args.download_setup,
             tag_previous_revision=args.tag_previous_revision,
             fork=args.fork,
             setup_only=args.setup_only,
