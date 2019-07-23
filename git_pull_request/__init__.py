@@ -104,10 +104,12 @@ def git_remote_url(remote="origin"):
 
 
 def git_get_config(option, default):
-    out = _run_shell_command(
-        ["git", "config", "--get", "git-pull-request." + option],
-        output=True, raise_on_error=False)
-    return out or default
+    try:
+        return _run_shell_command(
+            ["git", "config", "--get", "git-pull-request." + option],
+            output=True)
+    except RuntimeError:
+        return default
 
 
 def git_config_add_argument(parser, option, *args, **kwargs):
@@ -116,10 +118,9 @@ def git_config_add_argument(parser, option, *args, **kwargs):
     if isboolean and default is None:
         default = False
     default = git_get_config(option[2:], default)
-    if default:
-        if isboolean:
-            default = distutils.util.strtobool(default)
-        kwargs["default"] = default
+    if isboolean and isinstance(default, str):
+        default = distutils.util.strtobool(default)
+    kwargs["default"] = default
     return parser.add_argument(option, *args, **kwargs)
 
 
@@ -250,7 +251,8 @@ def git_pull_request(target_remote=None, target_branch=None,
                      download=None,
                      tag_previous_revision=False,
                      fork=True,
-                     setup_only=False):
+                     setup_only=False,
+                     branch_prefix=None):
     branch = git_get_branch_name()
     if not branch:
         LOG.critical("Unable to find current branch")
@@ -321,7 +323,7 @@ def git_pull_request(target_remote=None, target_branch=None,
                                    target_branch, branch, user, title, message,
                                    comment,
                                    force_editor, tag_previous_revision,
-                                   fork, setup_only)
+                                   fork, setup_only, branch_prefix)
     approve_login_password(host=hostname, user=user, password=password)
 
 
@@ -408,7 +410,7 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
                                target_remote, target_branch, branch, user,
                                title, message, comment,
                                force_editor, tag_previous_revision, fork,
-                               setup_only):
+                               setup_only, branch_prefix):
 
     g_user = g.get_user()
 
@@ -430,6 +432,14 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
             forked = True
             LOG.info("Forked repository: %s", repo_forked.html_url)
 
+    if branch_prefix is None and not forked:
+        branch_prefix = g_user.login
+
+    if branch_prefix:
+        remote_branch = "{}/{}".format(branch_prefix, branch)
+    else:
+        remote_branch = branch
+
     if forked:
         remote_to_push = git_remote_matching_url(repo_forked.clone_url)
 
@@ -443,9 +453,7 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
                  remote_to_push, repo_forked.clone_url])
             LOG.info("Added forked repository as remote `%s'", remote_to_push)
         head = "{}:{}".format(user, branch)
-        remote_branch = branch
     else:
-        remote_branch = "{}/{}".format(g_user.login, branch)
         remote_to_push = target_remote
         head = "{}:{}".format(repo_to_fork.owner.login, remote_branch)
 
@@ -579,6 +587,9 @@ def build_parser():
                         help="Title of the pull request.")
     parser.add_argument("--message", "-m",
                         help="Message of the pull request.")
+    git_config_add_argument(parser,
+                            "--branch-prefix",
+                            help="Prefix remote branch")
     git_config_add_argument(parser, "--no-rebase", "-R",
                             action="store_true",
                             help="Don't rebase branch before pushing.")
@@ -618,7 +629,6 @@ def build_parser():
         const="never",
         help="Don't fork to create the pull-request"
     )
-
     git_config_add_argument(
         parser,
         "--setup-only",
@@ -653,7 +663,8 @@ def main():
             download=args.download,
             tag_previous_revision=args.tag_previous_revision,
             fork=args.fork,
-            setup_only=args.setup_only
+            setup_only=args.setup_only,
+            branch_prefix=args.branch_prefix
         )
     except Exception:
         LOG.error("Unable to send pull request", exc_info=True)
