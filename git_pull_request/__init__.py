@@ -318,15 +318,17 @@ def git_pull_request(target_remote=None, target_branch=None,
         repo = g.get_user(user_to_fork).get_repo(reponame_to_fork)
 
     if download is not None:
-        download_pull_request(g, repo, target_remote, download)
+        retcode = download_pull_request(g, repo, target_remote, download)
     else:
-        fork_and_push_pull_request(g, hosttype, repo, rebase, target_remote,
-                                   target_branch, branch, user, title, message,
-                                   comment,
-                                   force_editor, tag_previous_revision,
-                                   fork, setup_only, branch_prefix, dry_run)
+        retcode = fork_and_push_pull_request(
+            g, hosttype, repo, rebase, target_remote, target_branch, branch,
+            user, title, message, comment, force_editor, tag_previous_revision,
+            fork, setup_only, branch_prefix, dry_run,
+        )
 
     approve_login_password(host=hostname, user=user, password=password)
+
+    return retcode
 
 
 def download_pull_request(g, repo, target_remote, pull_number):
