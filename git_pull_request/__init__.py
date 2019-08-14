@@ -253,7 +253,8 @@ def git_pull_request(target_remote=None, target_branch=None,
                      tag_previous_revision=False,
                      fork=True,
                      setup_only=False,
-                     branch_prefix=None):
+                     branch_prefix=None,
+                     dry_run=False):
     branch = git_get_branch_name()
     if not branch:
         LOG.critical("Unable to find current branch")
@@ -318,15 +319,19 @@ def git_pull_request(target_remote=None, target_branch=None,
         repo = g.get_user(user_to_fork).get_repo(reponame_to_fork)
 
     if download is not None:
-        download_pull_request(g, repo, target_remote,
-                              download, download_setup)
+        retcode = download_pull_request(g, repo, target_remote,
+                                        download, download_setup)
+
     else:
-        fork_and_push_pull_request(g, hosttype, repo, rebase, target_remote,
-                                   target_branch, branch, user, title, message,
-                                   comment,
-                                   force_editor, tag_previous_revision,
-                                   fork, setup_only, branch_prefix)
+        retcode = fork_and_push_pull_request(
+            g, hosttype, repo, rebase, target_remote, target_branch, branch,
+            user, title, message, comment, force_editor, tag_previous_revision,
+            fork, setup_only, branch_prefix, dry_run,
+        )
+
     approve_login_password(host=hostname, user=user, password=password)
+
+    return retcode
 
 
 def download_pull_request(g, repo, target_remote, pull_number,
@@ -428,7 +433,8 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
                                target_remote, target_branch, branch, user,
                                title, message, comment,
                                force_editor, tag_previous_revision, fork,
-                               setup_only, branch_prefix):
+                               setup_only, branch_prefix,
+                               dry_run=False):
 
     g_user = g.get_user()
 
@@ -504,14 +510,18 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
                 "resolved.")
             return 37
 
-    LOG.info("Force-pushing branch `%s' to remote `%s/%s'",
-             branch, remote_to_push, remote_branch)
-
-    _run_shell_command([
-        "git", "push", "-f",
-        remote_to_push,
-        "{}:{}".format(branch, remote_branch),
-    ])
+    if dry_run:
+        LOG.info("Would force-push branch `%s' to remote `%s/%s'",
+                 branch, remote_to_push, remote_branch)
+        return
+    else:
+        LOG.info("Force-pushing branch `%s' to remote `%s/%s'",
+                 branch, remote_to_push, remote_branch)
+        _run_shell_command([
+            "git", "push", "-f",
+            remote_to_push,
+            "{}:{}".format(branch, remote_branch),
+        ])
 
     pulls = list(repo_to_fork.get_pulls(base=target_branch,
                                         head=head))
@@ -611,6 +621,9 @@ def build_parser():
     parser.add_argument("--debug",
                         action='store_true',
                         help="Enabled debugging.")
+    parser.add_argument("--dry-run", "-n",
+                        action='store_true',
+                        help="Do not push not create the pull request.")
     git_config_add_argument(parser, "--target-remote",
                             help="Remote to send a pull-request to. "
                             "Default is auto-detected from .git/config.")
@@ -699,7 +712,8 @@ def main():
             tag_previous_revision=args.tag_previous_revision,
             fork=args.fork,
             setup_only=args.setup_only,
-            branch_prefix=args.branch_prefix
+            branch_prefix=args.branch_prefix,
+            dry_run=args.dry_run,
         )
     except Exception:
         LOG.error("Unable to send pull request", exc_info=True)
