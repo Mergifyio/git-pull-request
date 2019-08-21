@@ -355,15 +355,12 @@ def download_pull_request(g, repo, target_remote, pull_number,
 
     if setup_remote:
         remote_name = "github-%s" % pull.user.login
-        remote_branch = pull.head.ref
-        remote_to_push = remote_name + "/" + remote_branch
         remote = git_remote_url(remote_name, raise_on_error=False)
         if not remote:
             _run_shell_command(["git", "remote", "add", remote_name,
                                 pull.head.repo.clone_url])
         _run_shell_command(["git", "fetch", remote_name])
-        _run_shell_command(["git", "branch", "-u", remote_to_push,
-                            local_branch_name])
+        _run_shell_command(["git", "branch", "-u", "origin", pull.base.ref])
 
 
 def edit_file_get_content_and_remove(filename):
