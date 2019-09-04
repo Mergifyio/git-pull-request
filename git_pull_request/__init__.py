@@ -386,6 +386,9 @@ def find_pull_request_template():
         filename,
         os.path.join(".github", filename),
         os.path.join("docs", filename),
+        filename.lower(),
+        os.path.join(".github", filename.lower()),
+        os.path.join("docs", filename.lower()),
     ]
     for path in pr_template_paths:
         templates = glob.glob(path)
