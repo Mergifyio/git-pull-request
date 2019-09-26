@@ -360,7 +360,8 @@ def download_pull_request(g, repo, target_remote, pull_number,
             _run_shell_command(["git", "remote", "add", remote_name,
                                 pull.head.repo.clone_url])
         _run_shell_command(["git", "fetch", remote_name])
-        _run_shell_command(["git", "branch", "-u", "origin", pull.base.ref])
+        _run_shell_command(["git", "branch", "-u", "origin/%s" % pull.base.ref,
+                            local_branch_name])
 
 
 def edit_file_get_content_and_remove(filename):
