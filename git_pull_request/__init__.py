@@ -514,7 +514,6 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
     if dry_run:
         LOG.info("Would force-push branch `%s' to remote `%s/%s'",
                  branch, remote_to_push, remote_branch)
-        return
     else:
         LOG.info("Force-pushing branch `%s' to remote `%s/%s'",
                  branch, remote_to_push, remote_branch)
@@ -528,6 +527,10 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
                                         head=head))
     if pulls:
         for pull in pulls:
+            if dry_run:
+                LOG.info("Pull-request would be updated:\n  %s", pull.html_url)
+                continue
+
             LOG.info("Pull-request updated:\n  %s", pull.html_url)
 
             if force_editor:
@@ -543,12 +546,18 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
             elif message:
                 pull.edit(body=message)
                 LOG.debug("Updated pull-request message")
+        if dry_run:
+            return
         if comment:
-            # FIXME(jd) we should be able to comment directly on a PR without
-            # getting it as an issue but pygithub does not allow that yet
+            # FIXME(jd) we should be able to comment directly on a PR
+            # without getting it as an issue but pygithub does not allow
+            # that yet
             repo_to_fork.get_issue(pull.number).create_comment(comment)
             LOG.debug("Commented: \"%s\"", comment)
     else:
+        if dry_run:
+            LOG.info("Pull-request would be created.")
+            return
         # Create a pull request
         if force_editor or not (title and message):
             nb_of_commits, git_title, git_message = git_get_title_and_message(
