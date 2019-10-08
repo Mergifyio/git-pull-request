@@ -243,7 +243,8 @@ def git_get_title_and_message(begin, end):
     return (len(titles), title, message)
 
 
-def git_pull_request(target_remote=None, target_branch=None,
+def git_pull_request(*,
+                     target_remote=None, target_branch=None,
                      title=None, message=None,
                      comment=None,
                      rebase=True,
@@ -254,7 +255,9 @@ def git_pull_request(target_remote=None, target_branch=None,
                      fork=True,
                      setup_only=False,
                      branch_prefix=None,
-                     dry_run=False):
+                     dry_run=False,
+                     allow_noop=False
+                     ):
     branch = git_get_branch_name()
     if not branch:
         LOG.critical("Unable to find current branch")
@@ -326,7 +329,7 @@ def git_pull_request(target_remote=None, target_branch=None,
         retcode = fork_and_push_pull_request(
             g, hosttype, repo, rebase, target_remote, target_branch, branch,
             user, title, message, comment, force_editor, tag_previous_revision,
-            fork, setup_only, branch_prefix, dry_run,
+            fork, setup_only, branch_prefix, dry_run, allow_noop=allow_noop,
         )
 
     approve_login_password(host=hostname, user=user, password=password)
@@ -435,7 +438,7 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
                                title, message, comment,
                                force_editor, tag_previous_revision, fork,
                                setup_only, branch_prefix,
-                               dry_run=False):
+                               dry_run=False, *, allow_noop):
 
     g_user = g.get_user()
 
@@ -582,10 +585,16 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
                                             title=title,
                                             body=message)
         except github.GithubException as e:
-            LOG.critical(
-                _format_github_exception("create pull request", e)
-            )
-            return 50
+            if allow_noop and any((
+                    error.get("message", "").startswith("No commits between")
+                    for error in e.data.get("errors", [])
+            )):
+                LOG.info("Did not create pull-request, no new commits.")
+            else:
+                LOG.critical(
+                    _format_github_exception("create pull request", e)
+                )
+                return 50
         else:
             LOG.info("Pull-request created: %s", pull.html_url)
 
@@ -693,6 +702,13 @@ def build_parser():
         default=False,
         help="Just setup the fork repo"
     )
+    git_config_add_argument(
+        parser,
+        "--allow-noop",
+        action="store_true",
+        default=False,
+        help="If the target branch is up-to-date, do nothing."
+    )
     return parser
 
 
@@ -724,6 +740,7 @@ def main():
             setup_only=args.setup_only,
             branch_prefix=args.branch_prefix,
             dry_run=args.dry_run,
+            allow_noop=args.allow_noop,
         )
     except Exception:
         LOG.error("Unable to send pull request", exc_info=True)

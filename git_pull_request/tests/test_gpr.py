@@ -290,7 +290,11 @@ class TestGitConfig(fixtures.TestWithFixtures):
         gpr._run_shell_command(["git", "config",
                                 "git-pull-request.target-branch",
                                 "awesome_branch"])
+        gpr._run_shell_command(["git", "config",
+                                "git-pull-request.allow-noop",
+                                "true"])
         args = gpr.build_parser().parse_args([])
         self.assertEqual(True, args.setup_only)
         self.assertEqual("never", args.fork)
         self.assertEqual("awesome_branch", args.target_branch)
+        self.assertEqual(True, args.allow_noop)
