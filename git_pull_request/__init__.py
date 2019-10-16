@@ -546,14 +546,13 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
             elif message:
                 pull.edit(body=message)
                 LOG.debug("Updated pull-request message")
-        if dry_run:
-            return
-        if comment:
-            # FIXME(jd) we should be able to comment directly on a PR
-            # without getting it as an issue but pygithub does not allow
-            # that yet
-            repo_to_fork.get_issue(pull.number).create_comment(comment)
-            LOG.debug("Commented: \"%s\"", comment)
+
+            if comment:
+                # FIXME(jd) we should be able to comment directly on a PR
+                # without getting it as an issue but pygithub does not allow
+                # that yet
+                repo_to_fork.get_issue(pull.number).create_comment(comment)
+                LOG.debug("Commented: \"%s\"", comment)
     else:
         if dry_run:
             LOG.info("Pull-request would be created.")
