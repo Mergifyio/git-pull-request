@@ -254,7 +254,8 @@ def git_pull_request(target_remote=None, target_branch=None,
                      fork=True,
                      setup_only=False,
                      branch_prefix=None,
-                     dry_run=False):
+                     dry_run=False,
+                     labels=None):
     branch = git_get_branch_name()
     if not branch:
         LOG.critical("Unable to find current branch")
@@ -326,7 +327,7 @@ def git_pull_request(target_remote=None, target_branch=None,
         retcode = fork_and_push_pull_request(
             g, hosttype, repo, rebase, target_remote, target_branch, branch,
             user, title, message, comment, force_editor, tag_previous_revision,
-            fork, setup_only, branch_prefix, dry_run,
+            fork, setup_only, branch_prefix, dry_run, labels,
         )
 
     approve_login_password(host=hostname, user=user, password=password)
@@ -435,7 +436,8 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
                                title, message, comment,
                                force_editor, tag_previous_revision, fork,
                                setup_only, branch_prefix,
-                               dry_run=False):
+                               dry_run=False,
+                               labels=None):
 
     g_user = g.get_user()
 
@@ -553,6 +555,10 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
                 # that yet
                 repo_to_fork.get_issue(pull.number).create_comment(comment)
                 LOG.debug("Commented: \"%s\"", comment)
+
+            if labels:
+                LOG.debug("Adding labels %s", labels)
+                pull.add_to_labels(*labels)
     else:
         if dry_run:
             LOG.info("Pull-request would be created.")
@@ -587,6 +593,10 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
             return 50
         else:
             LOG.info("Pull-request created: %s", pull.html_url)
+
+        if labels:
+            LOG.debug("Adding labels %s", labels)
+            pull.add_to_labels(*labels)
 
     if tag_previous_revision:
         preserve_older_revision(branch, remote_to_push)
@@ -643,6 +653,9 @@ def build_parser():
                         help="Title of the pull request.")
     parser.add_argument("--message", "-m",
                         help="Message of the pull request.")
+    parser.add_argument("--label", "-l", action='append',
+                        help="The labels to add to the pull request. "
+                        "Can be used multiple times.")
     git_config_add_argument(parser,
                             "--branch-prefix",
                             help="Prefix remote branch")
@@ -723,6 +736,7 @@ def main():
             setup_only=args.setup_only,
             branch_prefix=args.branch_prefix,
             dry_run=args.dry_run,
+            labels=args.label,
         )
     except Exception:
         LOG.error("Unable to send pull request", exc_info=True)
