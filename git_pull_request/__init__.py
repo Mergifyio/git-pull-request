@@ -214,9 +214,19 @@ def git_get_commit_body(commit):
 
 def git_get_log_titles(begin, end):
     log = _run_shell_command(
-        ["git", "log", "--format=%s", "%s..%s" % (begin, end)],
+        ["git", "log", "--no-merges", "--format=%s", "%s..%s" % (begin, end)],
         output=True)
     return list(split_and_remove_empty_lines(log))
+
+
+def git_get_log(begin, end):
+    return _run_shell_command(
+        ["git", "log",
+         "--no-merges",
+         "--reverse",
+         "--format=## %s%n%n%b",
+         "%s..%s" % (begin, end)],
+        output=True)
 
 
 def git_get_title_and_message(begin, end):
@@ -227,9 +237,10 @@ def git_get_title_and_message(begin, end):
     :return: number of commits, title, message
     """
     titles = git_get_log_titles(begin, end)
-    title = "Pull request for " + end
     if len(titles) == 1:
         title = titles[0]
+    else:
+        title = "Pull request for " + end
     pr_template = find_pull_request_template()
     if pr_template:
         message = get_pr_template_message(pr_template)
@@ -237,7 +248,7 @@ def git_get_title_and_message(begin, end):
         if len(titles) == 1:
             message = git_get_commit_body(end)
         else:
-            message = "\n".join(titles)
+            message = git_get_log(begin, end)
 
     return title, message
 

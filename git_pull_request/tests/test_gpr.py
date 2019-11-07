@@ -129,9 +129,11 @@ class TestGitCommand(fixtures.TestWithFixtures):
         self.assertEqual(("Last message", "Long body, but not so long"),
                          gpr.git_get_title_and_message("master^", "master"))
 
-        self.assertEqual(("Pull request for master",
-                          "Last message\nFirst message"),
-                         gpr.git_get_title_and_message("master^^", "master"))
+        self.assertEqual(
+            ("Pull request for master",
+             "## First message\n\n\n"
+             "## Last message\n\nLong body, but not so long"),
+            gpr.git_get_title_and_message("master^^", "master"))
 
 
 class TestGithubPRTemplate(fixtures.TestWithFixtures):
