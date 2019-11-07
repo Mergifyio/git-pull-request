@@ -24,7 +24,6 @@ import subprocess
 import sys
 import tempfile
 from urllib import parse
-from uuid import uuid4
 
 import daiquiri
 
@@ -249,7 +248,6 @@ def git_pull_request(target_remote=None, target_branch=None,
                      rebase=True,
                      download=None,
                      download_setup=False,
-                     tag_previous_revision=False,
                      fork=True,
                      setup_only=False,
                      branch_prefix=None,
@@ -325,7 +323,7 @@ def git_pull_request(target_remote=None, target_branch=None,
     else:
         retcode = fork_and_push_pull_request(
             g, hosttype, repo, rebase, target_remote, target_branch, branch,
-            user, title, message, comment, tag_previous_revision,
+            user, title, message, comment,
             fork, setup_only, branch_prefix, dry_run, labels,
         )
 
@@ -417,23 +415,10 @@ def edit_title_and_message(title, message):
     return parse_pr_message(content)
 
 
-def preserve_older_revision(branch, remote_to_push):
-    tag = "{}-{}".format(branch, uuid4())
-    _run_shell_command(["git", "tag", tag])
-    try:
-        _run_shell_command(["git", "push", remote_to_push, tag])
-    except RuntimeError:
-        LOG.error("Unable to push tag %s for previous revision", tag)
-    else:
-        LOG.info("Previous revision of patchset saved on tag %s", tag)
-
-    _run_shell_command(["git", "tag", "-d", tag])
-
-
 def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
                                target_remote, target_branch, branch, user,
                                title, message, comment,
-                               tag_previous_revision, fork,
+                               fork,
                                setup_only, branch_prefix,
                                dry_run=False,
                                labels=None):
@@ -593,9 +578,6 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
             LOG.debug("Adding labels %s", labels)
             pull.add_to_labels(*labels)
 
-    if tag_previous_revision:
-        preserve_older_revision(branch, remote_to_push)
-
 
 def _format_github_exception(action, exc):
     url = exc.data.get("documentation_url", "GitHub documentation")
@@ -661,13 +643,6 @@ def build_parser():
         "--comment", "-C",
         help="Comment to publish when updating the pull-request"
     )
-    git_config_add_argument(
-        parser,
-        "--tag-previous-revision",
-        action="store_true",
-        default=False,
-        help="Preserve older revision when pushing"
-    )
     group = parser.add_mutually_exclusive_group()
     git_config_add_argument(
         group,
@@ -719,7 +694,6 @@ def main():
             rebase=not args.no_rebase,
             download=args.download,
             download_setup=args.download_setup,
-            tag_previous_revision=args.tag_previous_revision,
             fork=args.fork,
             setup_only=args.setup_only,
             branch_prefix=args.branch_prefix,
