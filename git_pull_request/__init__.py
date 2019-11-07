@@ -19,7 +19,6 @@ import itertools
 import logging
 import operator
 import os
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -33,6 +32,12 @@ import github
 
 
 LOG = daiquiri.getLogger("git-pull-request")
+
+IGNORE_MARKER = "# ------------------------ >8 ------------------------"
+IGNORE_MARKER_DESC = (
+    "# Do not modify or remove the line above.\n"
+    "# Everything below it will be ignored.\n"
+)
 
 
 def _run_shell_command(cmd, output=None, raise_on_error=True):
@@ -201,8 +206,10 @@ def parse_pr_message(message):
     if len(message) == 0:
         return None, None
     title = message_by_line[0]
-    body = "\n".join(itertools.dropwhile(
-        operator.not_, message_by_line[1:]))
+    body = "\n".join(itertools.takewhile(
+        lambda line: not line.startswith(IGNORE_MARKER),
+        itertools.dropwhile(
+            operator.not_, message_by_line[1:])))
     return title, body
 
 
@@ -241,14 +248,19 @@ def git_get_title_and_message(begin, end):
         title = titles[0]
     else:
         title = "Pull request for " + end
-    pr_template = find_pull_request_template()
-    if pr_template:
-        message = get_pr_template_message(pr_template)
+
+    pr_template = get_pull_request_template()
+    if pr_template is not None:
+        message = (
+            pr_template + "\n" +
+            IGNORE_MARKER + "\n" +
+            IGNORE_MARKER_DESC +
+            git_get_log(begin, end)
+        )
+    elif len(titles) == 1:
+        message = git_get_commit_body(end)
     else:
-        if len(titles) == 1:
-            message = git_get_commit_body(end)
-        else:
-            message = git_get_log(begin, end)
+        message = git_get_log(begin, end)
 
     return title, message
 
@@ -390,7 +402,7 @@ def edit_file_get_content_and_remove(filename):
     return content
 
 
-def find_pull_request_template():
+def get_pull_request_template():
     filename = "PULL_REQUEST_TEMPLATE*"
     pr_template_paths = [
         filename,
@@ -403,16 +415,8 @@ def find_pull_request_template():
     for path in pr_template_paths:
         templates = glob.glob(path)
         if templates:
-            return templates[0]
-
-
-def get_pr_template_message(template):
-    fd, bodyfilename = tempfile.mkstemp()
-    os.close(fd)
-    shutil.copy(template, bodyfilename)
-    content = edit_file_get_content_and_remove(bodyfilename)
-
-    return content
+            with open(templates[0]) as t:
+                return t.read()
 
 
 def edit_title_and_message(title, message):
