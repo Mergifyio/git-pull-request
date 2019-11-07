@@ -240,14 +240,13 @@ def git_get_title_and_message(begin, end):
         else:
             message = "\n".join(titles)
 
-    return (len(titles), title, message)
+    return title, message
 
 
 def git_pull_request(target_remote=None, target_branch=None,
                      title=None, message=None,
                      comment=None,
                      rebase=True,
-                     force_editor=False,
                      download=None,
                      download_setup=False,
                      tag_previous_revision=False,
@@ -326,7 +325,7 @@ def git_pull_request(target_remote=None, target_branch=None,
     else:
         retcode = fork_and_push_pull_request(
             g, hosttype, repo, rebase, target_remote, target_branch, branch,
-            user, title, message, comment, force_editor, tag_previous_revision,
+            user, title, message, comment, tag_previous_revision,
             fork, setup_only, branch_prefix, dry_run, labels,
         )
 
@@ -434,7 +433,7 @@ def preserve_older_revision(branch, remote_to_push):
 def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
                                target_remote, target_branch, branch, user,
                                title, message, comment,
-                               force_editor, tag_previous_revision, fork,
+                               tag_previous_revision, fork,
                                setup_only, branch_prefix,
                                dry_run=False,
                                labels=None):
@@ -535,9 +534,8 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
 
             LOG.info("Pull-request updated:\n  %s", pull.html_url)
 
-            if force_editor:
-                title, message = edit_title_and_message(title or pull.title,
-                                                        message or pull.body)
+            title, message = edit_title_and_message(title or pull.title,
+                                                    message or pull.body)
 
             if title and message:
                 pull.edit(title=title, body=message)
@@ -564,18 +562,12 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
             LOG.info("Pull-request would be created.")
             return
         # Create a pull request
-        if force_editor or not (title and message):
-            nb_of_commits, git_title, git_message = git_get_title_and_message(
+        if not title or not message:
+            git_title, git_message = git_get_title_and_message(
                 "%s/%s" % (target_remote, target_branch), branch)
             title = title or git_title
             message = message or git_message
-            # Do not run an editor if there's only one commit or if both
-            # title and message were specified
-            if (force_editor or
-               ((not title or not message) and nb_of_commits > 1) or
-               (((title and not message) or
-                 (message and not title)) and nb_of_commits == 1)):
-                title, message = edit_title_and_message(title, message)
+            title, message = edit_title_and_message(title, message)
 
         if title is None:
             LOG.critical("Pull-request message is empty, aborting")
@@ -662,12 +654,6 @@ def build_parser():
     git_config_add_argument(parser, "--no-rebase", "-R",
                             action="store_true",
                             help="Don't rebase branch before pushing.")
-    git_config_add_argument(
-        parser,
-        "--force-editor",
-        action="store_true",
-        default=False,
-        help="Force editor to run to edit pull-request message.")
     parser.add_argument(
         "--comment", "-C",
         help="Comment to publish when updating the pull-request"
@@ -728,7 +714,6 @@ def main():
             message=args.message,
             comment=args.comment,
             rebase=not args.no_rebase,
-            force_editor=args.force_editor,
             download=args.download,
             download_setup=args.download_setup,
             tag_previous_revision=args.tag_previous_revision,
