@@ -129,9 +129,11 @@ class TestGitCommand(fixtures.TestWithFixtures):
         self.assertEqual(("Last message", "Long body, but not so long"),
                          gpr.git_get_title_and_message("master^", "master"))
 
-        self.assertEqual(("Pull request for master",
-                          "Last message\nFirst message"),
-                         gpr.git_get_title_and_message("master^^", "master"))
+        self.assertEqual(
+            ("Pull request for master",
+             "## First message\n\n\n"
+             "## Last message\n\nLong body, but not so long"),
+            gpr.git_get_title_and_message("master^^", "master"))
 
 
 class TestGithubPRTemplate(fixtures.TestWithFixtures):
@@ -167,11 +169,29 @@ class TestGithubPRTemplate(fixtures.TestWithFixtures):
                   "PULL_REQUEST_TEMPLATE.md"), "w+") as pr_template:
             pr_template.write("# test")
 
-        self.assertEqual(("Last message", "# test"),
-                         gpr.git_get_title_and_message("master^", "master"))
+        self.assertEqual(
+            ("Last message",
+             "# test\n"
+             "# ------------------------ >8 ------------------------\n"
+             "# Do not modify or remove the line above.\n"
+             "# Everything below it will be ignored.\n"
+             "## Last message\n\n"
+             "Long body, but not so long"),
+            gpr.git_get_title_and_message("master^", "master"))
+        self.assertEqual(
+            ("Pull request for master",
+             "# test\n"
+             "# ------------------------ >8 ------------------------\n"
+             "# Do not modify or remove the line above.\n"
+             "# Everything below it will be ignored.\n"
+             "## First message\n\n\n"
+             "## Last message\n\n"
+             "Long body, but not so long"),
+            gpr.git_get_title_and_message("master^^", "master"))
 
-        self.assertEqual(("Pull request for master", "# test"),
-                         gpr.git_get_title_and_message("master^^", "master"))
+        title, message = gpr.git_get_title_and_message("master^^", "master")
+
+        assert gpr.parse_pr_message(message) == ("# test", "")
 
 
 class TestMessageParsing(fixtures.TestWithFixtures):
