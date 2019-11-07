@@ -558,9 +558,6 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
                 LOG.debug("Adding labels %s", labels)
                 pull.add_to_labels(*labels)
     else:
-        if dry_run:
-            LOG.info("Pull-request would be created.")
-            return
         # Create a pull request
         if not title or not message:
             git_title, git_message = git_get_title_and_message(
@@ -572,6 +569,12 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
         if title is None:
             LOG.critical("Pull-request message is empty, aborting")
             return 40
+
+        if dry_run:
+            LOG.info("Pull-request would be created.")
+            LOG.info("Title: %s", title)
+            LOG.info("Body: %s", message)
+            return
 
         try:
             pull = repo_to_fork.create_pull(base=target_branch,
