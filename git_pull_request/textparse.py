@@ -12,10 +12,10 @@
 # implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-IGNORE_MARKER = "# ------------------------ >8 ------------------------"
+IGNORE_MARKER = "> ------------------------ >8 ------------------------"
 IGNORE_MARKER_DESC = (
-    "# Do not modify or remove the line above.\n"
-    "# Everything below it will be ignored.\n"
+    "> Do not modify or remove the line above.\n"
+    "> Everything below it will be ignored.\n"
 )
 
 

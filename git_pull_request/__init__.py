@@ -534,7 +534,7 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
 
             body = textparse.concat_with_ignore_marker(
                 message or git_message,
-                "#\n# Current pull request content:\n" +
+                ">\n> Current pull request content:\n" +
                 pull.title + "\n\n" + pull.body,
             )
 

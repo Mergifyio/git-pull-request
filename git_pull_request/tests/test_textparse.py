@@ -20,9 +20,9 @@ def test_ignore_marker():
     s2 = "hello\nthere\n"
     c = textparse.concat_with_ignore_marker(s1, s2)
     assert """bonjour
-# ------------------------ >8 ------------------------
-# Do not modify or remove the line above.
-# Everything below it will be ignored.
+> ------------------------ >8 ------------------------
+> Do not modify or remove the line above.
+> Everything below it will be ignored.
 hello
 there
 """ == c

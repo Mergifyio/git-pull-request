@@ -174,9 +174,9 @@ class TestGithubPRTemplate(fixtures.TestWithFixtures):
             (1,
              "Last message",
              "# test\n"
-             "# ------------------------ >8 ------------------------\n"
-             "# Do not modify or remove the line above.\n"
-             "# Everything below it will be ignored.\n"
+             "> ------------------------ >8 ------------------------\n"
+             "> Do not modify or remove the line above.\n"
+             "> Everything below it will be ignored.\n"
              "## Last message\n\n"
              "Long body, but not so long"),
             gpr.git_get_title_and_message("master^", "master"))
@@ -184,9 +184,9 @@ class TestGithubPRTemplate(fixtures.TestWithFixtures):
             (2,
              "Pull request for master",
              "# test\n"
-             "# ------------------------ >8 ------------------------\n"
-             "# Do not modify or remove the line above.\n"
-             "# Everything below it will be ignored.\n"
+             "> ------------------------ >8 ------------------------\n"
+             "> Do not modify or remove the line above.\n"
+             "> Everything below it will be ignored.\n"
              "## First message\n\n\n"
              "## Last message\n\n"
              "Long body, but not so long"),
