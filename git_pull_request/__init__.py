@@ -27,17 +27,12 @@ from urllib import parse
 import daiquiri
 
 from git_pull_request import pagure
+from git_pull_request import textparse
 
 import github
 
 
 LOG = daiquiri.getLogger("git-pull-request")
-
-IGNORE_MARKER = "# ------------------------ >8 ------------------------"
-IGNORE_MARKER_DESC = (
-    "# Do not modify or remove the line above.\n"
-    "# Everything below it will be ignored.\n"
-)
 
 
 def _run_shell_command(cmd, output=None, raise_on_error=True):
@@ -202,14 +197,13 @@ def split_and_remove_empty_lines(s):
 
 
 def parse_pr_message(message):
+    message = textparse.remove_ignore_marker(message)
     message_by_line = message.split("\n")
     if len(message) == 0:
         return None, None
     title = message_by_line[0]
-    body = "\n".join(itertools.takewhile(
-        lambda line: not line.startswith(IGNORE_MARKER),
-        itertools.dropwhile(
-            operator.not_, message_by_line[1:])))
+    body = "\n".join(itertools.dropwhile(
+        operator.not_, message_by_line[1:]))
     return title, body
 
 
@@ -251,11 +245,8 @@ def git_get_title_and_message(begin, end):
 
     pr_template = get_pull_request_template()
     if pr_template is not None:
-        message = (
-            pr_template + "\n" +
-            IGNORE_MARKER + "\n" +
-            IGNORE_MARKER_DESC +
-            git_get_log(begin, end)
+        message = textparse.concat_with_ignore_marker(
+            pr_template, git_get_log(begin, end)
         )
     elif len(titles) == 1:
         message = git_get_commit_body(end)
