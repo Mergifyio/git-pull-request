@@ -523,14 +523,17 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
 
     if pulls:
         for pull in pulls:
-            # If there's only one commit, it's very likely the new PR title
-            # should be the actual current title. Otherwise, it's unlikely the
-            # title we autogenerate is going to be better than one might be in
-            # place now, so keep it.
-            if nb_commits == 1:
-                ptitle = git_title
+            if title is None:
+                # If there's only one commit, it's very likely the new PR title
+                # should be the actual current title. Otherwise, it's unlikely
+                # the title we autogenerate is going to be better than one
+                # might be in place now, so keep it.
+                if nb_commits == 1:
+                    ptitle = git_title
+                else:
+                    ptitle = pull.title
             else:
-                ptitle = pull.title
+                ptitle = title
 
             body = textparse.concat_with_ignore_marker(
                 message or git_message,
