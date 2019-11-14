@@ -540,6 +540,10 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
 
             ptitle, body = edit_title_and_message(ptitle, body)
 
+            if ptitle is None:
+                LOG.critical("Pull-request message is empty, aborting")
+                return 40
+
             if ptitle and body:
                 if dry_run:
                     LOG.info("Would edit title and body")
