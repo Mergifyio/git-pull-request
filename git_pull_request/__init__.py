@@ -523,14 +523,17 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
 
     if pulls:
         for pull in pulls:
-            # If there's only one commit, it's very likely the new PR title
-            # should be the actual current title. Otherwise, it's unlikely the
-            # title we autogenerate is going to be better than one might be in
-            # place now, so keep it.
-            if nb_commits == 1:
-                ptitle = git_title
+            if title is None:
+                # If there's only one commit, it's very likely the new PR title
+                # should be the actual current title. Otherwise, it's unlikely
+                # the title we autogenerate is going to be better than one
+                # might be in place now, so keep it.
+                if nb_commits == 1:
+                    ptitle = git_title
+                else:
+                    ptitle = pull.title
             else:
-                ptitle = pull.title
+                ptitle = title
 
             body = textparse.concat_with_ignore_marker(
                 message or git_message,
@@ -539,6 +542,10 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
             )
 
             ptitle, body = edit_title_and_message(ptitle, body)
+
+            if ptitle is None:
+                LOG.critical("Pull-request message is empty, aborting")
+                return 40
 
             if ptitle and body:
                 if dry_run:
@@ -579,6 +586,8 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
                 else:
                     LOG.debug("Adding labels %s", labels)
                     pull.add_to_labels(*labels)
+
+            LOG.info("Pull-request updated: %s", pull.html_url)
     else:
         # Create a pull request
         if not title or not message:
