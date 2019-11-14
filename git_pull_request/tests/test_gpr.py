@@ -126,11 +126,12 @@ class TestGitCommand(fixtures.TestWithFixtures):
                                 "-m", "Last message\n\nLong body, "
                                 "but not so long\n"])
 
-        self.assertEqual(("Last message", "Long body, but not so long"),
+        self.assertEqual((1, "Last message", "Long body, but not so long"),
                          gpr.git_get_title_and_message("master^", "master"))
 
         self.assertEqual(
-            ("Pull request for master",
+            (2,
+             "Pull request for master",
              "## First message\n\n\n"
              "## Last message\n\nLong body, but not so long"),
             gpr.git_get_title_and_message("master^^", "master"))
@@ -170,26 +171,30 @@ class TestGithubPRTemplate(fixtures.TestWithFixtures):
             pr_template.write("# test")
 
         self.assertEqual(
-            ("Last message",
+            (1,
+             "Last message",
              "# test\n"
-             "# ------------------------ >8 ------------------------\n"
-             "# Do not modify or remove the line above.\n"
-             "# Everything below it will be ignored.\n"
+             "> ------------------------ >8 ------------------------\n"
+             "> Do not modify or remove the line above.\n"
+             "> Everything below it will be ignored.\n"
              "## Last message\n\n"
              "Long body, but not so long"),
             gpr.git_get_title_and_message("master^", "master"))
         self.assertEqual(
-            ("Pull request for master",
+            (2,
+             "Pull request for master",
              "# test\n"
-             "# ------------------------ >8 ------------------------\n"
-             "# Do not modify or remove the line above.\n"
-             "# Everything below it will be ignored.\n"
+             "> ------------------------ >8 ------------------------\n"
+             "> Do not modify or remove the line above.\n"
+             "> Everything below it will be ignored.\n"
              "## First message\n\n\n"
              "## Last message\n\n"
              "Long body, but not so long"),
             gpr.git_get_title_and_message("master^^", "master"))
 
-        title, message = gpr.git_get_title_and_message("master^^", "master")
+        count, title, message = gpr.git_get_title_and_message(
+            "master^^", "master",
+        )
 
         assert gpr.parse_pr_message(message) == ("# test", "")
 

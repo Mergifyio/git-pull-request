@@ -27,17 +27,12 @@ from urllib import parse
 import daiquiri
 
 from git_pull_request import pagure
+from git_pull_request import textparse
 
 import github
 
 
 LOG = daiquiri.getLogger("git-pull-request")
-
-IGNORE_MARKER = "# ------------------------ >8 ------------------------"
-IGNORE_MARKER_DESC = (
-    "# Do not modify or remove the line above.\n"
-    "# Everything below it will be ignored.\n"
-)
 
 
 def _run_shell_command(cmd, output=None, raise_on_error=True):
@@ -202,14 +197,13 @@ def split_and_remove_empty_lines(s):
 
 
 def parse_pr_message(message):
+    message = textparse.remove_ignore_marker(message)
     message_by_line = message.split("\n")
     if len(message) == 0:
         return None, None
     title = message_by_line[0]
-    body = "\n".join(itertools.takewhile(
-        lambda line: not line.startswith(IGNORE_MARKER),
-        itertools.dropwhile(
-            operator.not_, message_by_line[1:])))
+    body = "\n".join(itertools.dropwhile(
+        operator.not_, message_by_line[1:]))
     return title, body
 
 
@@ -251,18 +245,15 @@ def git_get_title_and_message(begin, end):
 
     pr_template = get_pull_request_template()
     if pr_template is not None:
-        message = (
-            pr_template + "\n" +
-            IGNORE_MARKER + "\n" +
-            IGNORE_MARKER_DESC +
-            git_get_log(begin, end)
+        message = textparse.concat_with_ignore_marker(
+            pr_template, git_get_log(begin, end)
         )
     elif len(titles) == 1:
         message = git_get_commit_body(end)
     else:
         message = git_get_log(begin, end)
 
-    return title, message
+    return len(titles), title, message
 
 
 def git_pull_request(target_remote=None, target_branch=None,
@@ -526,42 +517,71 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
 
     pulls = list(repo_to_fork.get_pulls(base=target_branch,
                                         head=head))
+
+    nb_commits, git_title, git_message = git_get_title_and_message(
+        "%s/%s" % (target_remote, target_branch), branch)
+
     if pulls:
         for pull in pulls:
-            if dry_run:
-                LOG.info("Pull-request would be updated:\n  %s", pull.html_url)
-                continue
+            # If there's only one commit, it's very likely the new PR title
+            # should be the actual current title. Otherwise, it's unlikely the
+            # title we autogenerate is going to be better than one might be in
+            # place now, so keep it.
+            if nb_commits == 1:
+                ptitle = git_title
+            else:
+                ptitle = pull.title
 
-            LOG.info("Pull-request updated:\n  %s", pull.html_url)
+            body = textparse.concat_with_ignore_marker(
+                message or git_message,
+                ">\n> Current pull request content:\n" +
+                pull.title + "\n\n" + pull.body,
+            )
 
-            title, message = edit_title_and_message(title or pull.title,
-                                                    message or pull.body)
+            ptitle, body = edit_title_and_message(ptitle, body)
 
-            if title and message:
-                pull.edit(title=title, body=message)
-                LOG.debug("Updated pull-request title and message")
-            elif title:
-                pull.edit(title=title)
-                LOG.debug("Updated pull-request title")
-            elif message:
-                pull.edit(body=message)
-                LOG.debug("Updated pull-request message")
+            if ptitle and body:
+                if dry_run:
+                    LOG.info("Would edit title and body")
+                    LOG.info("%s\n", ptitle)
+                    LOG.info("%s", body)
+                else:
+                    pull.edit(title=ptitle, body=body)
+                    LOG.debug("Updated pull-request title and body")
+            elif ptitle:
+                if dry_run:
+                    LOG.info("Would edit title")
+                    LOG.info("%s\n", ptitle)
+                else:
+                    pull.edit(title=ptitle)
+                    LOG.debug("Updated pull-request title")
+            elif body:
+                if dry_run:
+                    LOG.info("Would edit body")
+                    LOG.info("%s\n", body)
+                else:
+                    pull.edit(body=body)
+                    LOG.debug("Updated pull-request body")
 
             if comment:
-                # FIXME(jd) we should be able to comment directly on a PR
-                # without getting it as an issue but pygithub does not allow
-                # that yet
-                repo_to_fork.get_issue(pull.number).create_comment(comment)
-                LOG.debug("Commented: \"%s\"", comment)
+                if dry_run:
+                    LOG.info("Would comment: \"%s\"", comment)
+                else:
+                    # FIXME(jd) we should be able to comment directly on a PR
+                    # without getting it as an issue but pygithub does not
+                    # allow that yet
+                    repo_to_fork.get_issue(pull.number).create_comment(comment)
+                    LOG.debug("Commented: \"%s\"", comment)
 
             if labels:
-                LOG.debug("Adding labels %s", labels)
-                pull.add_to_labels(*labels)
+                if dry_run:
+                    LOG.info("Would add labels %s", labels)
+                else:
+                    LOG.debug("Adding labels %s", labels)
+                    pull.add_to_labels(*labels)
     else:
         # Create a pull request
         if not title or not message:
-            git_title, git_message = git_get_title_and_message(
-                "%s/%s" % (target_remote, target_branch), branch)
             title = title or git_title
             message = message or git_message
             title, message = edit_title_and_message(title, message)
