@@ -586,6 +586,8 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
                 else:
                     LOG.debug("Adding labels %s", labels)
                     pull.add_to_labels(*labels)
+
+            LOG.info("Pull-request updated: %s", pull.html_url)
     else:
         # Create a pull request
         if not title or not message:
