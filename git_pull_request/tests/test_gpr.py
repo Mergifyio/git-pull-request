@@ -73,6 +73,10 @@ class TestStuff(BaseTestGitRepo):
             ("github", "example.com", "jd", "git-pull-request"),
             gpr.get_hosttype_hostname_user_repo_from_url(
                 "https://example.com/jd/git-pull-request"))
+        self.assertEqual(
+            ("github", "example.com:2222", "jd", "git-pull-request"),
+            gpr.get_hosttype_hostname_user_repo_from_url(
+                "ssh://git@example.com:2222/jd/git-pull-request"))
         gpr.git_set_config_hosttype("pagure")
         self.assertEqual(
             ("pagure", "pagure.io", None, "pagure"),
