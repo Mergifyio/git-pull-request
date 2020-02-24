@@ -184,6 +184,8 @@ def get_hosttype_hostname_user_repo_from_url(url):
     else:
         path = parsed.path[1:].rstrip('/')
         host = parsed.netloc
+        if "@" in host:
+            username, sep, host = host.partition("@")
     hosttype = get_hosttype(host)
     if hosttype == "pagure":
         user, repo = None, path
