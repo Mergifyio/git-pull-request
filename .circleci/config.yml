@@ -37,6 +37,15 @@ jobs:
           command: |
             sudo pip install tox
             tox -e py37
+  py38:
+    docker:
+      - image: circleci/python:3.8
+    steps:
+      - checkout
+      - run:
+          command: |
+            sudo pip install tox
+            tox -e py38
 
 
 workflows:
@@ -48,3 +57,4 @@ workflows:
       - py35
       - py36
       - py37
+      - py38
