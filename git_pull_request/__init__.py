@@ -19,6 +19,7 @@ import itertools
 import logging
 import operator
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -88,12 +89,19 @@ def approve_login_password(user, password,
         LOG.error("git credential returned exited with status %d", ret)
 
 
-def git_remote_matching_url(url):
+def git_remote_matching_url(wanted_url):
+    wanted_tuple = get_hosttype_hostname_user_repo_from_url(wanted_url)
+
     remotes = _run_shell_command(["git", "remote", "-v"],
                                  output=True).split('\n')
     for remote in remotes:
-        if url + " (push)" in remote:
-            return remote.partition("\t")[0]
+        name, remote_url, push_pull = re.split(r"\s", remote)
+        if push_pull != "(push)":
+            continue
+        remote_tuple = get_hosttype_hostname_user_repo_from_url(remote_url)
+
+        if wanted_tuple == remote_tuple:
+            return name
 
 
 def git_remote_url(remote="origin", raise_on_error=True):
@@ -175,7 +183,7 @@ def get_hosttype_hostname_user_repo_from_url(url):
     :param url: The URL to parse
     :return: hosttype, hostname, user, repository
     """
-    parsed = parse.urlparse(url)
+    parsed = parse.urlparse(url.lower())
     if parsed.netloc == '':
         # Probably ssh
         host, sep, path = parsed.path.partition(":")
