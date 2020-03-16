@@ -15,6 +15,8 @@
 import os
 import unittest
 
+import attr
+
 import fixtures
 
 import git_pull_request as gpr
@@ -48,44 +50,44 @@ class BaseTestGitRepo(fixtures.TestWithFixtures):
 
 
 class TestStuff(BaseTestGitRepo):
-    def test_get_hosttype_user_repo_from_url(self):
+    def test_get_repository_id_from_url(self):
         self.assertEqual(
             ("github", "github.com", "jd", "git-pull-request"),
-            gpr.get_hosttype_hostname_user_repo_from_url(
-                "https://github.com/jd/git-pull-request.git"))
+            attr.astuple(gpr.get_repository_id_from_url(
+                "https://github.com/jd/git-pull-request.git")))
         self.assertEqual(
             ("github", "github.com", "jd", "git-pull-request"),
-            gpr.get_hosttype_hostname_user_repo_from_url(
-                "git@github.com:jd/git-pull-request.git"))
+            attr.astuple(gpr.get_repository_id_from_url(
+                "git@github.com:jd/git-pull-request.git")))
         self.assertEqual(
             ("github", "github.com", "jd", "git-pull-request"),
-            gpr.get_hosttype_hostname_user_repo_from_url(
-                "git://github.com/jd/git-pull-request.git"))
+            attr.astuple(gpr.get_repository_id_from_url(
+                "git://github.com/jd/git-pull-request.git")))
         self.assertEqual(
             ("github", "example.com", "jd", "git-pull-request"),
-            gpr.get_hosttype_hostname_user_repo_from_url(
-                "https://example.com/jd/git-pull-request.git"))
+            attr.astuple(gpr.get_repository_id_from_url(
+                "https://example.com/jd/git-pull-request.git")))
         self.assertEqual(
             ("github", "github.com", "jd", "git-pull-request"),
-            gpr.get_hosttype_hostname_user_repo_from_url(
-                "git@github.com:jd/git-pull-request"))
+            attr.astuple(gpr.get_repository_id_from_url(
+                "git@github.com:jd/git-pull-request")))
         self.assertEqual(
             ("github", "example.com", "jd", "git-pull-request"),
-            gpr.get_hosttype_hostname_user_repo_from_url(
-                "https://example.com/jd/git-pull-request"))
+            attr.astuple(gpr.get_repository_id_from_url(
+                "https://example.com/jd/git-pull-request")))
         self.assertEqual(
             ("github", "example.com:2222", "jd", "git-pull-request"),
-            gpr.get_hosttype_hostname_user_repo_from_url(
-                "ssh://git@example.com:2222/jd/git-pull-request"))
+            attr.astuple(gpr.get_repository_id_from_url(
+                "ssh://git@example.com:2222/jd/git-pull-request")))
         gpr.git_set_config_hosttype("pagure")
         self.assertEqual(
             ("pagure", "pagure.io", None, "pagure"),
-            gpr.get_hosttype_hostname_user_repo_from_url(
-                "https://pagure.io/pagure"))
+            attr.astuple(gpr.get_repository_id_from_url(
+                "https://pagure.io/pagure")))
         self.assertEqual(
             ("pagure", "src.fedoraproject.org", None, "rpms/git-pull-request"),
-            gpr.get_hosttype_hostname_user_repo_from_url(
-                "https://src.fedoraproject.org/rpms/git-pull-request"))
+            attr.astuple(gpr.get_repository_id_from_url(
+                "https://src.fedoraproject.org/rpms/git-pull-request")))
 
 
 class TestGitCommand(fixtures.TestWithFixtures):
@@ -289,21 +291,22 @@ class TestExceptionFormatting(unittest.TestCase):
 
 class TestGithubHostnameUserRepoFromUrl(BaseTestGitRepo):
     def test_git_clone_url(self):
-        expected = ("github", "example.com", "jd", "git-pull-request")
+        expected = gpr.RepositoryId(
+            "github", "example.com", "jd", "git-pull-request")
 
         self.assertEqual(
             expected,
-            gpr.get_hosttype_hostname_user_repo_from_url(
+            gpr.get_repository_id_from_url(
                 "https://example.com/jd/git-pull-request"))
 
         self.assertEqual(
             expected,
-            gpr.get_hosttype_hostname_user_repo_from_url(
+            gpr.get_repository_id_from_url(
                 "https://example.com/jd/git-pull-request.git"))
 
         self.assertEqual(
             expected,
-            gpr.get_hosttype_hostname_user_repo_from_url(
+            gpr.get_repository_id_from_url(
                 "https://example.com/jd/git-pull-request/"))
 
 
