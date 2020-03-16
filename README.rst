@@ -56,6 +56,14 @@ GitHub has a good documentation about using `git credential
 The full documentation is available on the `git-scm.com website
 <https://git-scm.com/book/en/v2/Git-Tools-Credential-Storage>`_.
 
+GitHub
+------
+
+If you set up 2-Factors Authentication for your GitHub account, you
+should `create a personal token
+<https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line>`_
+and request the `repo` permission, then use that as your password.
+
 Pagure Token
 ------------
 
