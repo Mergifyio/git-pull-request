@@ -95,6 +95,8 @@ class TestGitCommand(fixtures.TestWithFixtures):
         gpr._run_shell_command(["git", "init", "--quiet"])
         gpr._run_shell_command(["git", "remote", "add", "origin",
                                 "https://github.com/jd/git-pull-request.git"])
+        gpr._run_shell_command(["git", "remote", "add", "fork",
+                                "git@github.com:Flameeyes/git-pull-request"])
         gpr._run_shell_command(["git", "config", "branch.master.merge",
                                 "refs/heads/master"])
         gpr._run_shell_command(["git", "config", "branch.master.remote",
@@ -112,6 +114,14 @@ class TestGitCommand(fixtures.TestWithFixtures):
             "origin",
             gpr.git_remote_matching_url(
                 "https://github.com/jd/git-pull-request.git"))
+        self.assertEqual(
+            "fork",
+            gpr.git_remote_matching_url(
+                "https://github.com/Flameeyes/git-pull-request.git"))
+        self.assertEqual(
+            "fork",
+            gpr.git_remote_matching_url(
+                "https://github.com/flameeyes/Git-Pull-Request.git"))
 
     def test_git_get_remote_branch_for_branch(self):
         self.assertEqual(
