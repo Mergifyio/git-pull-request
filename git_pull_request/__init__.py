@@ -25,6 +25,8 @@ import sys
 import tempfile
 from urllib import parse
 
+import attr
+
 import daiquiri
 
 from git_pull_request import pagure
@@ -34,6 +36,21 @@ import github
 
 
 LOG = daiquiri.getLogger("git-pull-request")
+
+
+@attr.s(eq=False, hash=False)
+class RepositoryId:
+    hosttype = attr.ib(type=str)
+    hostname = attr.ib(type=str)
+    user = attr.ib(type=str)
+    repository = attr.ib(type=str)
+
+    def __eq__(self, other):
+        return (
+            self.hosttype == other.hosttype and
+            self.hostname.lower() == other.hostname.lower() and
+            self.user.lower() == other.user.lower() and
+            self.repository.lower() == other.repository.lower())
 
 
 def _run_shell_command(cmd, output=None, raise_on_error=True):
@@ -90,7 +107,7 @@ def approve_login_password(user, password,
 
 
 def git_remote_matching_url(wanted_url):
-    wanted_tuple = get_hosttype_hostname_user_repo_from_url(wanted_url)
+    wanted_id = get_repository_id_from_url(wanted_url)
 
     remotes = _run_shell_command(["git", "remote", "-v"],
                                  output=True).split('\n')
@@ -98,9 +115,9 @@ def git_remote_matching_url(wanted_url):
         name, remote_url, push_pull = re.split(r"\s", remote)
         if push_pull != "(push)":
             continue
-        remote_tuple = get_hosttype_hostname_user_repo_from_url(remote_url)
+        remote_id = get_repository_id_from_url(remote_url)
 
-        if wanted_tuple == remote_tuple:
+        if wanted_id == remote_id:
             return name
 
 
@@ -177,13 +194,13 @@ def get_hosttype(host):
     return hosttype
 
 
-def get_hosttype_hostname_user_repo_from_url(url):
+def get_repository_id_from_url(url):
     """Return hostype, hostname, user and repository to fork from.
 
     :param url: The URL to parse
     :return: hosttype, hostname, user, repository
     """
-    parsed = parse.urlparse(url.lower())
+    parsed = parse.urlparse(url)
     if parsed.netloc == '':
         # Probably ssh
         host, sep, path = parsed.path.partition(":")
@@ -199,7 +216,11 @@ def get_hosttype_hostname_user_repo_from_url(url):
         user, repo = None, path
     else:
         user, repo = path.split("/", 1)
-    return hosttype, host, user, repo[:-4] if repo.endswith('.git') else repo
+
+    if repo.endswith('.git'):
+        repo = repo[:-4]
+
+    return RepositoryId(hosttype, host, user, repo)
 
 
 def split_and_remove_empty_lines(s):
@@ -312,8 +333,8 @@ def git_pull_request(target_remote=None, target_branch=None,
 
     LOG.debug("Remote URL for remote `%s' is `%s'", target_remote, target_url)
 
-    hosttype, hostname, user_to_fork, reponame_to_fork = (
-        get_hosttype_hostname_user_repo_from_url(target_url)
+    hosttype, hostname, user_to_fork, reponame_to_fork = attr.astuple(
+        get_repository_id_from_url(target_url)
     )
     LOG.debug("%s user and repository to fork: %s/%s on %s",
               hosttype.capitalize(), user_to_fork, reponame_to_fork, hostname)
@@ -458,6 +479,7 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
         else:
             forked = True
             LOG.info("Forked repository: %s", repo_forked.html_url)
+            forked_repo_id = get_repository_id_from_url(repo_forked.clone_url)
 
     if branch_prefix is None and not forked:
         branch_prefix = g_user.login
@@ -479,7 +501,7 @@ def fork_and_push_pull_request(g, hosttype, repo_to_fork, rebase,
                 ["git", "remote", "add",
                  remote_to_push, repo_forked.clone_url])
             LOG.info("Added forked repository as remote `%s'", remote_to_push)
-        head = "{}:{}".format(user, branch)
+        head = "{}:{}".format(forked_repo_id.user, branch)
     else:
         remote_to_push = target_remote
         head = "{}:{}".format(repo_to_fork.owner.login, remote_branch)
