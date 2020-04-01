@@ -12,7 +12,6 @@
 # limitations under the License.
 
 import daiquiri
-
 import requests
 
 
@@ -42,14 +41,17 @@ class Client:
         if token is None:
             token = self.token
         url = "https://%s/api/0/%s" % (self.host, endpoint)
-        resp = self.session.request(method, url, data=data, headers=dict(
-            Authorization="token %s" % token))
+        resp = self.session.request(
+            method, url, data=data, headers=dict(Authorization="token %s" % token)
+        )
         if not resp.ok:
             if resp.status_code == 401:
                 raise RuntimeError(resp.json().get("error"))
             if not error_ok:
-                raise RuntimeError("%s %s (%s) failed (%d) %s" % (
-                    method, url, data, resp.status_code, resp.text))
+                raise RuntimeError(
+                    "%s %s (%s) failed (%d) %s"
+                    % (method, url, data, resp.status_code, resp.text)
+                )
             return False
         return resp.json()
 
@@ -61,23 +63,30 @@ class Client:
 
     # Main procedures
     def get_project_tokens(self):
-        return self.get(
-            "%s/connector" % self.fork_path)["connector"]["api_tokens"]
+        return self.get("%s/connector" % self.fork_path)["connector"]["api_tokens"]
 
     def get_project_token(self):
         """Get or Create an API key for the project fork."""
         if not self.project_token:
             # Check if token already exists
-            tokens = list(filter(
-                lambda x: x["description"] == "git-pull-request" and
-                          not x["expired"], self.get_project_tokens()))
+            tokens = list(
+                filter(
+                    lambda x: x["description"] == "git-pull-request"
+                    and not x["expired"],
+                    self.get_project_tokens(),
+                )
+            )
             if tokens:
                 self.project_token = tokens[0]["id"]
         if not self.project_token:
             # Otherwise, create the token
-            resp = self.post("%s/token/new" % self.fork_path, dict(
-                description="git-pull-request",
-                acls=["pull_request_comment", "pull_request_create"]))
+            resp = self.post(
+                "%s/token/new" % self.fork_path,
+                dict(
+                    description="git-pull-request",
+                    acls=["pull_request_comment", "pull_request_create"],
+                ),
+            )
             self.project_token = resp["token"]["id"]
         return self.project_token
 
@@ -95,9 +104,13 @@ class Client:
         urls = self.get("{}/git/urls".format(reponame))["urls"]
         if "ssh" not in urls:
             raise RuntimeError("%s: ssh url is missing" % reponame)
-        return type('ForkedRepo', (object,), dict(
-            clone_url=urls["ssh"].format(username=self.user),
-            html_url=urls["git"]))
+        return type(
+            "ForkedRepo",
+            (object,),
+            dict(
+                clone_url=urls["ssh"].format(username=self.user), html_url=urls["git"]
+            ),
+        )
 
     def create_fork(self, _):
         LOG.debug("check if the fork already exists")
@@ -109,8 +122,7 @@ class Client:
             namespace = None
             if repoinfo:
                 namespace = repoinfo.pop()
-            self.post("fork",
-                      {"repo": repo, "namespace": namespace, "wait": True})
+            self.post("fork", {"repo": repo, "namespace": namespace, "wait": True})
         self.enable_pull_request(self.fork_path)
         return self.get_repo_urls(self.fork_path)
 
@@ -123,7 +135,10 @@ class Client:
 
             def __init__(self, number, title):
                 self.html_url = "https://%s/%s/pull-request/%d" % (
-                    self.host, self.repo, number)
+                    self.host,
+                    self.repo,
+                    number,
+                )
                 self.number = number
                 self.title = title
 
@@ -131,31 +146,43 @@ class Client:
         branch_from = head.split(":", 1)[1]
         pulls = []
         # TODO: support pagination
-        for pull in filter(lambda x: (x["branch"] == base and
-                                      x["branch_from"] == branch_from),
-                           self.get("%s/pull-requests?author=%s" % (
-                               self.reponame_to_fork, self.user))["requests"]):
+        for pull in filter(
+            lambda x: (x["branch"] == base and x["branch_from"] == branch_from),
+            self.get("%s/pull-requests?author=%s" % (self.reponame_to_fork, self.user))[
+                "requests"
+            ],
+        ):
             pulls.append(Pull(pull["id"], pull["title"]))
         return pulls
 
     def create_pull(self, base, head, title, body):
         # Pagure head doesn't contain the username
         branch_from = head.split(":", 1)[1]
-        resp = self.post("%s/pull-request/new" % self.fork_path, dict(
-            title=title,
-            branch_to=base,
-            branch_from=branch_from,
-            initial_comment=body), self.get_project_token())
+        resp = self.post(
+            "%s/pull-request/new" % self.fork_path,
+            dict(
+                title=title,
+                branch_to=base,
+                branch_from=branch_from,
+                initial_comment=body,
+            ),
+            self.get_project_token(),
+        )
 
         class Pull:
             html_url = "https://%s/%s/pull-request/%d" % (
-                self.host, self.reponame_to_fork, resp["id"])
+                self.host,
+                self.reponame_to_fork,
+                resp["id"],
+            )
+
         return Pull
 
     # Shim layer to look like a github client
     def get_user(self):
         class User:
             create_fork = self.create_fork
+
         return User
 
     def get_issue(self, x):
@@ -168,6 +195,7 @@ class Client:
         class Repo:
             class owner:
                 login = self.user
+
             create_pull = self.create_pull
             get_pulls = self.get_pulls
             get_pull = self.get_pull
@@ -182,6 +210,7 @@ class Client:
 
             class head:
                 ref = "head"
+
             number = pull_number
 
         return PullObject
