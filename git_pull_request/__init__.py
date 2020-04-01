@@ -428,17 +428,22 @@ def get_pull_request_template():
     filename = "PULL_REQUEST_TEMPLATE*"
     pr_template_paths = [
         filename,
+        ".github/PULL_REQUEST_TEMPLATE/*.md",
+        ".github/PULL_REQUEST_TEMPLATE/*.txt",
         os.path.join(".github", filename),
         os.path.join("docs", filename),
         filename.lower(),
+        ".github/pull_request_template/*.md",
+        ".github/pull_request_template/*.txt",
         os.path.join(".github", filename.lower()),
         os.path.join("docs", filename.lower()),
     ]
     for path in pr_template_paths:
         templates = glob.glob(path)
-        if templates:
-            with open(templates[0]) as t:
-                return t.read()
+        for template_path in templates:
+            if os.path.isfile(template_path):
+                with open(template_path) as t:
+                    return t.read()
 
 
 def edit_title_and_message(title, message):
