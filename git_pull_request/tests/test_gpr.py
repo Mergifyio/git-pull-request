@@ -16,12 +16,10 @@ import os
 import unittest
 
 import attr
-
 import fixtures
+import github
 
 import git_pull_request as gpr
-
-import github
 
 
 class TestRunShellCommand(unittest.TestCase):
@@ -34,11 +32,9 @@ class TestRunShellCommand(unittest.TestCase):
 
     def test_error(self):
         self.assertRaises(
-            RuntimeError,
-            gpr._run_shell_command,
-            ["ls", "sureitdoesnoteixst"])
-        gpr._run_shell_command(["ls", "sureitdoesnoteixst"],
-                               raise_on_error=False)
+            RuntimeError, gpr._run_shell_command, ["ls", "sureitdoesnoteixst"]
+        )
+        gpr._run_shell_command(["ls", "sureitdoesnoteixst"], raise_on_error=False)
 
 
 class BaseTestGitRepo(fixtures.TestWithFixtures):
@@ -53,41 +49,69 @@ class TestStuff(BaseTestGitRepo):
     def test_get_repository_id_from_url(self):
         self.assertEqual(
             ("github", "github.com", "jd", "git-pull-request"),
-            attr.astuple(gpr.get_repository_id_from_url(
-                "https://github.com/jd/git-pull-request.git")))
+            attr.astuple(
+                gpr.get_repository_id_from_url(
+                    "https://github.com/jd/git-pull-request.git"
+                )
+            ),
+        )
         self.assertEqual(
             ("github", "github.com", "jd", "git-pull-request"),
-            attr.astuple(gpr.get_repository_id_from_url(
-                "git@github.com:jd/git-pull-request.git")))
+            attr.astuple(
+                gpr.get_repository_id_from_url("git@github.com:jd/git-pull-request.git")
+            ),
+        )
         self.assertEqual(
             ("github", "github.com", "jd", "git-pull-request"),
-            attr.astuple(gpr.get_repository_id_from_url(
-                "git://github.com/jd/git-pull-request.git")))
+            attr.astuple(
+                gpr.get_repository_id_from_url(
+                    "git://github.com/jd/git-pull-request.git"
+                )
+            ),
+        )
         self.assertEqual(
             ("github", "example.com", "jd", "git-pull-request"),
-            attr.astuple(gpr.get_repository_id_from_url(
-                "https://example.com/jd/git-pull-request.git")))
+            attr.astuple(
+                gpr.get_repository_id_from_url(
+                    "https://example.com/jd/git-pull-request.git"
+                )
+            ),
+        )
         self.assertEqual(
             ("github", "github.com", "jd", "git-pull-request"),
-            attr.astuple(gpr.get_repository_id_from_url(
-                "git@github.com:jd/git-pull-request")))
+            attr.astuple(
+                gpr.get_repository_id_from_url("git@github.com:jd/git-pull-request")
+            ),
+        )
         self.assertEqual(
             ("github", "example.com", "jd", "git-pull-request"),
-            attr.astuple(gpr.get_repository_id_from_url(
-                "https://example.com/jd/git-pull-request")))
+            attr.astuple(
+                gpr.get_repository_id_from_url(
+                    "https://example.com/jd/git-pull-request"
+                )
+            ),
+        )
         self.assertEqual(
             ("github", "example.com:2222", "jd", "git-pull-request"),
-            attr.astuple(gpr.get_repository_id_from_url(
-                "ssh://git@example.com:2222/jd/git-pull-request")))
+            attr.astuple(
+                gpr.get_repository_id_from_url(
+                    "ssh://git@example.com:2222/jd/git-pull-request"
+                )
+            ),
+        )
         gpr.git_set_config_hosttype("pagure")
         self.assertEqual(
             ("pagure", "pagure.io", None, "pagure"),
-            attr.astuple(gpr.get_repository_id_from_url(
-                "https://pagure.io/pagure")))
+            attr.astuple(gpr.get_repository_id_from_url("https://pagure.io/pagure")),
+        )
         self.assertEqual(
             ("pagure", "src.fedoraproject.org", None, "rpms/git-pull-request"),
-            attr.astuple(gpr.get_repository_id_from_url(
-                "https://src.fedoraproject.org/rpms/git-pull-request")))
+            attr.astuple(
+                gpr.get_repository_id_from_url(
+                    "https://src.fedoraproject.org/rpms/git-pull-request"
+                )
+            ),
+        )
 
 
 class TestGitCommand(fixtures.TestWithFixtures):
@@ -95,62 +119,88 @@ class TestGitCommand(fixtures.TestWithFixtures):
         self.tempdir = self.useFixture(fixtures.TempDir()).path
         os.chdir(self.tempdir)
         gpr._run_shell_command(["git", "init", "--quiet"])
-        gpr._run_shell_command(["git", "remote", "add", "origin",
-                                "https://github.com/jd/git-pull-request.git"])
-        gpr._run_shell_command(["git", "remote", "add", "fork",
-                                "git@github.com:Flameeyes/git-pull-request"])
-        gpr._run_shell_command(["git", "config", "branch.master.merge",
-                                "refs/heads/master"])
-        gpr._run_shell_command(["git", "config", "branch.master.remote",
-                                "origin"])
+        gpr._run_shell_command(
+            [
+                "git",
+                "remote",
+                "add",
+                "origin",
+                "https://github.com/jd/git-pull-request.git",
+            ]
+        )
+        gpr._run_shell_command(
+            [
+                "git",
+                "remote",
+                "add",
+                "fork",
+                "git@github.com:Flameeyes/git-pull-request",
+            ]
+        )
+        gpr._run_shell_command(
+            ["git", "config", "branch.master.merge", "refs/heads/master"]
+        )
+        gpr._run_shell_command(["git", "config", "branch.master.remote", "origin"])
         gpr._run_shell_command(["git", "config", "user.name", "nobody"])
-        gpr._run_shell_command(["git", "config", "user.email",
-                                "nobody@example.com"])
+        gpr._run_shell_command(["git", "config", "user.email", "nobody@example.com"])
 
     def test_get_remote_for_branch(self):
-        self.assertEqual("origin",
-                         gpr.git_get_remote_for_branch("master"))
+        self.assertEqual("origin", gpr.git_get_remote_for_branch("master"))
 
     def test_git_remote_matching_url(self):
         self.assertEqual(
             "origin",
-            gpr.git_remote_matching_url(
-                "https://github.com/jd/git-pull-request.git"))
+            gpr.git_remote_matching_url("https://github.com/jd/git-pull-request.git"),
+        )
         self.assertEqual(
             "fork",
             gpr.git_remote_matching_url(
-                "https://github.com/Flameeyes/git-pull-request.git"))
+                "https://github.com/Flameeyes/git-pull-request.git"
+            ),
+        )
         self.assertEqual(
             "fork",
             gpr.git_remote_matching_url(
-                "https://github.com/flameeyes/Git-Pull-Request.git"))
+                "https://github.com/flameeyes/Git-Pull-Request.git"
+            ),
+        )
 
     def test_git_get_remote_branch_for_branch(self):
-        self.assertEqual(
-            "master",
-            gpr.git_get_remote_branch_for_branch("master"))
+        self.assertEqual("master", gpr.git_get_remote_branch_for_branch("master"))
 
     def test_git_get_title_and_message(self):
-        gpr._run_shell_command(["git", "commit", "--allow-empty",
-                                "--no-edit", "-q",
-                                "-m", "Import"])
-        gpr._run_shell_command(["git", "commit", "--allow-empty",
-                                "--no-edit", "-q",
-                                "-m", "First message"])
-        gpr._run_shell_command(["git", "commit", "--allow-empty",
-                                "--no-edit", "-q",
-                                "-m", "Last message\n\nLong body, "
-                                "but not so long\n"])
-
-        self.assertEqual((1, "Last message", "Long body, but not so long"),
-                         gpr.git_get_title_and_message("master^", "master"))
+        gpr._run_shell_command(
+            ["git", "commit", "--allow-empty", "--no-edit", "-q", "-m", "Import"]
+        )
+        gpr._run_shell_command(
+            ["git", "commit", "--allow-empty", "--no-edit", "-q", "-m", "First message"]
+        )
+        gpr._run_shell_command(
+            [
+                "git",
+                "commit",
+                "--allow-empty",
+                "--no-edit",
+                "-q",
+                "-m",
+                "Last message\n\nLong body, " "but not so long\n",
+            ]
+        )
 
         self.assertEqual(
-            (2,
-             "Pull request for master",
-             "## First message\n\n\n"
-             "## Last message\n\nLong body, but not so long"),
-            gpr.git_get_title_and_message("master^^", "master"))
+            (1, "Last message", "Long body, but not so long"),
+            gpr.git_get_title_and_message("master^", "master"),
+        )
+
+        self.assertEqual(
+            (
+                2,
+                "Pull request for master",
+                "## First message\n\n\n"
+                "## Last message\n\nLong body, but not so long",
+            ),
+            gpr.git_get_title_and_message("master^^", "master"),
+        )
 
 
 class TestGithubPRTemplate(fixtures.TestWithFixtures):
@@ -161,56 +211,73 @@ class TestGithubPRTemplate(fixtures.TestWithFixtures):
 
     def test_git_get_title_and_message(self):
         gpr._run_shell_command(["git", "init", "--quiet"])
-        gpr._run_shell_command(["git", "remote", "add", "origin",
-                                "https://github.com/jd/git-pull-request.git"])
-        gpr._run_shell_command(["git", "config", "branch.master.merge",
-                                "refs/heads/master"])
-        gpr._run_shell_command(["git", "config", "branch.master.remote",
-                                "origin"])
+        gpr._run_shell_command(
+            [
+                "git",
+                "remote",
+                "add",
+                "origin",
+                "https://github.com/jd/git-pull-request.git",
+            ]
+        )
+        gpr._run_shell_command(
+            ["git", "config", "branch.master.merge", "refs/heads/master"]
+        )
+        gpr._run_shell_command(["git", "config", "branch.master.remote", "origin"])
         gpr._run_shell_command(["git", "config", "user.name", "nobody"])
-        gpr._run_shell_command(["git", "config", "user.email",
-                                "nobody@example.com"])
-        gpr._run_shell_command(["git", "commit", "--allow-empty",
-                                "--no-edit", "-q",
-                                "-m", "Import"])
-        gpr._run_shell_command(["git", "commit", "--allow-empty",
-                                "--no-edit", "-q",
-                                "-m", "First message"])
-        gpr._run_shell_command(["git", "commit", "--allow-empty",
-                                "--no-edit", "-q",
-                                "-m", "Last message\n\nLong body, "
-                                "but not so long\n"])
+        gpr._run_shell_command(["git", "config", "user.email", "nobody@example.com"])
+        gpr._run_shell_command(
+            ["git", "commit", "--allow-empty", "--no-edit", "-q", "-m", "Import"]
+        )
+        gpr._run_shell_command(
+            ["git", "commit", "--allow-empty", "--no-edit", "-q", "-m", "First message"]
+        )
+        gpr._run_shell_command(
+            [
+                "git",
+                "commit",
+                "--allow-empty",
+                "--no-edit",
+                "-q",
+                "-m",
+                "Last message\n\nLong body, " "but not so long\n",
+            ]
+        )
 
-        with open(os.path.join(
-                  self.tempdir,
-                  "PULL_REQUEST_TEMPLATE.md"), "w+") as pr_template:
+        with open(
+            os.path.join(self.tempdir, "PULL_REQUEST_TEMPLATE.md"), "w+"
+        ) as pr_template:
             pr_template.write("# test")
 
         self.assertEqual(
-            (1,
-             "Last message",
-             "# test\n"
-             "> ------------------------ >8 ------------------------\n"
-             "> Do not modify or remove the line above.\n"
-             "> Everything below it will be ignored.\n"
-             "## Last message\n\n"
-             "Long body, but not so long"),
-            gpr.git_get_title_and_message("master^", "master"))
-        self.assertEqual(
-            (2,
-             "Pull request for master",
-             "# test\n"
-             "> ------------------------ >8 ------------------------\n"
-             "> Do not modify or remove the line above.\n"
-             "> Everything below it will be ignored.\n"
-             "## First message\n\n\n"
-             "## Last message\n\n"
-             "Long body, but not so long"),
-            gpr.git_get_title_and_message("master^^", "master"))
-
-        count, title, message = gpr.git_get_title_and_message(
-            "master^^", "master",
+            (
+                1,
+                "Last message",
+                "# test\n"
+                "> ------------------------ >8 ------------------------\n"
+                "> Do not modify or remove the line above.\n"
+                "> Everything below it will be ignored.\n"
+                "## Last message\n\n"
+                "Long body, but not so long",
+            ),
+            gpr.git_get_title_and_message("master^", "master"),
         )
+        self.assertEqual(
+            (
+                2,
+                "Pull request for master",
+                "# test\n"
+                "> ------------------------ >8 ------------------------\n"
+                "> Do not modify or remove the line above.\n"
+                "> Everything below it will be ignored.\n"
+                "## First message\n\n\n"
+                "## Last message\n\n"
+                "Long body, but not so long",
+            ),
+            gpr.git_get_title_and_message("master^^", "master"),
+        )
+
+        count, title, message = gpr.git_get_title_and_message("master^^", "master",)
 
         assert gpr.parse_pr_message(message) == ("# test", "")
 
@@ -222,13 +289,16 @@ class TestMessageParsing(fixtures.TestWithFixtures):
         os.chdir(tempdir)
         self.assertEqual(
             ("foobar", "something\nawesome"),
-            gpr.parse_pr_message("foobar\nsomething\nawesome"))
+            gpr.parse_pr_message("foobar\nsomething\nawesome"),
+        )
         self.assertEqual(
             ("foobar", "something\nawesome\n"),
-            gpr.parse_pr_message("foobar\nsomething\nawesome\n"))
+            gpr.parse_pr_message("foobar\nsomething\nawesome\n"),
+        )
         self.assertEqual(
             ("foobar", "something\nawesome\n"),
-            gpr.parse_pr_message("foobar\n\nsomething\nawesome\n"))
+            gpr.parse_pr_message("foobar\n\nsomething\nawesome\n"),
+        )
 
 
 class TestMessageEditor(fixtures.TestWithFixtures):
@@ -238,29 +308,33 @@ class TestMessageEditor(fixtures.TestWithFixtures):
         self.useFixture(fixtures.EnvironmentVariable("EDITOR", "cat"))
 
     def test_edit_title_and_message(self):
-        self.assertEqual(("foobar", "something\nawesome"),
-                         gpr.edit_title_and_message(
-                         "foobar", "something\nawesome"))
+        self.assertEqual(
+            ("foobar", "something\nawesome"),
+            gpr.edit_title_and_message("foobar", "something\nawesome"),
+        )
 
     def test_edit_title_and_message_failure(self):
         self.useFixture(fixtures.EnvironmentVariable("EDITOR", "false"))
-        self.assertRaises(RuntimeError,
-                          gpr.edit_title_and_message,
-                          "foobar", "something\nawesome")
+        self.assertRaises(
+            RuntimeError, gpr.edit_title_and_message, "foobar", "something\nawesome"
+        )
 
 
 class TestExceptionFormatting(unittest.TestCase):
     def test_issue_12(self):
-        e = github.GithubException(422, {
-            u'documentation_url':
-            u'https://developer.github.com/v3/pulls/#create-a-pull-request',
-            u'message':
-            u'Validation Failed',
-            u'errors': [{
-                u'message': u'No commits between issues-221 and issues-221',
-                u'code': u'custom',
-                u'resource': u'PullRequest'}
-            ]}
+        e = github.GithubException(
+            422,
+            {
+                u"documentation_url": u"https://developer.github.com/v3/pulls/#create-a-pull-request",
+                u"message": u"Validation Failed",
+                u"errors": [
+                    {
+                        u"message": u"No commits between issues-221 and issues-221",
+                        u"code": u"custom",
+                        u"resource": u"PullRequest",
+                    }
+                ],
+            },
         )
         self.assertEqual(
             "Unable to create pull request: Validation Failed (422)\n"
@@ -268,46 +342,49 @@ class TestExceptionFormatting(unittest.TestCase):
             "Check "
             "https://developer.github.com/v3/pulls/#create-a-pull-request "
             "for more information.",
-            gpr._format_github_exception("create pull request", e))
+            gpr._format_github_exception("create pull request", e),
+        )
 
     def test_no_message(self):
-        e = github.GithubException(422, {
-            'message': 'Validation Failed',
-            'documentation_url':
-            'https://developer.github.com/v3/pulls/#create-a-pull-request',
-            'errors': [{
-                'resource': 'PullRequest',
-                'field': 'head',
-                'code': 'invalid'}
-            ]}
+        e = github.GithubException(
+            422,
+            {
+                "message": "Validation Failed",
+                "documentation_url": "https://developer.github.com/v3/pulls/#create-a-pull-request",
+                "errors": [
+                    {"resource": "PullRequest", "field": "head", "code": "invalid"}
+                ],
+            },
         )
         self.assertEqual(
             "Unable to create pull request: Validation Failed (422)\n\n"
             "Check "
             "https://developer.github.com/v3/pulls/#create-a-pull-request "
             "for more information.",
-            gpr._format_github_exception("create pull request", e))
+            gpr._format_github_exception("create pull request", e),
+        )
 
 
 class TestGithubHostnameUserRepoFromUrl(BaseTestGitRepo):
     def test_git_clone_url(self):
-        expected = gpr.RepositoryId(
-            "github", "example.com", "jd", "git-pull-request")
+        expected = gpr.RepositoryId("github", "example.com", "jd", "git-pull-request")
+
+        self.assertEqual(
+            expected,
+            gpr.get_repository_id_from_url("https://example.com/jd/git-pull-request"),
+        )
 
         self.assertEqual(
             expected,
             gpr.get_repository_id_from_url(
-                "https://example.com/jd/git-pull-request"))
+                "https://example.com/jd/git-pull-request.git"
+            ),
+        )
 
         self.assertEqual(
             expected,
-            gpr.get_repository_id_from_url(
-                "https://example.com/jd/git-pull-request.git"))
-
-        self.assertEqual(
-            expected,
-            gpr.get_repository_id_from_url(
-                "https://example.com/jd/git-pull-request/"))
+            gpr.get_repository_id_from_url("https://example.com/jd/git-pull-request/"),
+        )
 
 
 class TestGitConfig(fixtures.TestWithFixtures):
@@ -315,23 +392,27 @@ class TestGitConfig(fixtures.TestWithFixtures):
         self.tempdir = self.useFixture(fixtures.TempDir()).path
         os.chdir(self.tempdir)
         gpr._run_shell_command(["git", "init", "--quiet"])
-        gpr._run_shell_command(["git", "remote", "add", "origin",
-                                "https://github.com/jd/git-pull-request.git"])
-        gpr._run_shell_command(["git", "config", "branch.master.merge",
-                                "refs/heads/master"])
-        gpr._run_shell_command(["git", "config", "branch.master.remote",
-                                "origin"])
+        gpr._run_shell_command(
+            [
+                "git",
+                "remote",
+                "add",
+                "origin",
+                "https://github.com/jd/git-pull-request.git",
+            ]
+        )
+        gpr._run_shell_command(
+            ["git", "config", "branch.master.merge", "refs/heads/master"]
+        )
+        gpr._run_shell_command(["git", "config", "branch.master.remote", "origin"])
         gpr._run_shell_command(["git", "config", "user.name", "nobody"])
-        gpr._run_shell_command(["git", "config", "user.email",
-                                "nobody@example.com"])
+        gpr._run_shell_command(["git", "config", "user.email", "nobody@example.com"])
 
-        gpr._run_shell_command(["git", "config",
-                                "git-pull-request.setup-only", "yes"])
-        gpr._run_shell_command(["git", "config",
-                                "git-pull-request.fork", "never"])
-        gpr._run_shell_command(["git", "config",
-                                "git-pull-request.target-branch",
-                                "awesome_branch"])
+        gpr._run_shell_command(["git", "config", "git-pull-request.setup-only", "yes"])
+        gpr._run_shell_command(["git", "config", "git-pull-request.fork", "never"])
+        gpr._run_shell_command(
+            ["git", "config", "git-pull-request.target-branch", "awesome_branch"]
+        )
         args = gpr.build_parser().parse_args([])
         self.assertEqual(True, args.setup_only)
         self.assertEqual("never", args.fork)

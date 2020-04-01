@@ -21,17 +21,19 @@ IGNORE_MARKER_DESC = (
 
 def concat_with_ignore_marker(str1, str2):
     return (
-        str1 +
+        str1
+        +
         # Be sure there's a \n between str1 and the marker
-        ("\n" if str1 and str1[-1] != "\n" else "") +
-        IGNORE_MARKER + "\n" +
-        IGNORE_MARKER_DESC +
-        str2
+        ("\n" if str1 and str1[-1] != "\n" else "")
+        + IGNORE_MARKER
+        + "\n"
+        + IGNORE_MARKER_DESC
+        + str2
     )
 
 
 def remove_ignore_marker(s):
     try:
-        return s[:s.index(IGNORE_MARKER)]
+        return s[: s.index(IGNORE_MARKER)]
     except ValueError:
         return s

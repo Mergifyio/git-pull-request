@@ -19,13 +19,16 @@ def test_ignore_marker():
     s1 = "bonjour\n"
     s2 = "hello\nthere\n"
     c = textparse.concat_with_ignore_marker(s1, s2)
-    assert """bonjour
+    assert (
+        """bonjour
 > ------------------------ >8 ------------------------
 > Do not modify or remove the line above.
 > Everything below it will be ignored.
 hello
 there
-""" == c
+"""
+        == c
+    )
     assert "bonjour\n" == textparse.remove_ignore_marker(c)
 
 
