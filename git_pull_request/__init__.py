@@ -659,7 +659,9 @@ def fork_and_push_pull_request(
                 LOG.critical("Pull-request message is empty, aborting")
                 return 40
 
-            if ptitle and body:
+            if ptitle == pull.title and body == pull.body:
+                LOG.debug("Pull-request title and body is already up to date")
+            elif ptitle and body:
                 if dry_run:
                     LOG.info("Would edit title and body")
                     LOG.info("%s\n", ptitle)
