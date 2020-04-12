@@ -301,6 +301,7 @@ def git_pull_request(
     target_branch=None,
     title=None,
     message=None,
+    keep_message=None,
     comment=None,
     rebase=True,
     download=None,
@@ -395,6 +396,7 @@ def git_pull_request(
             user,
             title,
             message,
+            keep_message,
             comment,
             fork,
             setup_only,
@@ -445,7 +447,7 @@ def edit_file_get_content_and_remove(filename):
     editor = _run_shell_command(["git", "var", "GIT_EDITOR"], output=True)
     if not editor:
         LOG.warning(
-            "$EDITOR is unset, you will not be able to edit the " "pull-request message"
+            "$EDITOR is unset, you will not be able to edit the pull-request message"
         )
         editor = "cat"
     status = os.system(editor + " " + filename)
@@ -502,6 +504,7 @@ def fork_and_push_pull_request(
     user,
     title,
     message,
+    keep_message,
     comment,
     fork,
     setup_only,
@@ -645,15 +648,19 @@ def fork_and_push_pull_request(
             else:
                 ptitle = title
 
-            body = textparse.concat_with_ignore_marker(
-                message or git_message,
-                ">\n> Current pull request content:\n"
-                + pull.title
-                + "\n\n"
-                + pull.body,
-            )
+            if keep_message:
+                ptitle = pull.title
+                body = pull.body
+            else:
+                body = textparse.concat_with_ignore_marker(
+                    message or git_message,
+                    ">\n> Current pull request content:\n"
+                    + pull.title
+                    + "\n\n"
+                    + pull.body,
+                )
 
-            ptitle, body = edit_title_and_message(ptitle, body)
+                ptitle, body = edit_title_and_message(ptitle, body)
 
             if ptitle is None:
                 LOG.critical("Pull-request message is empty, aborting")
@@ -795,6 +802,13 @@ def build_parser():
     parser.add_argument("--title", help="Title of the pull request.")
     parser.add_argument("--message", "-m", help="Message of the pull request.")
     parser.add_argument(
+        "--keep-message",
+        "-k",
+        action="store_true",
+        help="Don't open an editor to change the pull request message. "
+        "Useful when just refreshing an already-open pull request.",
+    )
+    parser.add_argument(
         "--label",
         "-l",
         action="append",
@@ -863,6 +877,7 @@ def main():
             target_branch=args.target_branch,
             title=args.title,
             message=args.message,
+            keep_message=args.keep_message,
             comment=args.comment,
             rebase=not args.no_rebase,
             download=args.download,
