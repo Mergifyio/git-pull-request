@@ -764,7 +764,7 @@ class DownloadAndSetupAction(argparse.Action):
 
 
 def build_parser():
-    parser = argparse.ArgumentParser(description="Send GitHub pull-request.")
+    parser = argparse.ArgumentParser(description="Creates a GitHub pull-request.")
     parser.add_argument(
         "--download",
         "-d",
@@ -785,7 +785,7 @@ def build_parser():
         "--dry-run",
         "-n",
         action="store_true",
-        help="Do not push not create the pull request.",
+        help="Do not push nor create the pull request.",
     )
     git_config_add_argument(
         parser,
