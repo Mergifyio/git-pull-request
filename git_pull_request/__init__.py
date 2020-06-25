@@ -622,7 +622,7 @@ def fork_and_push_pull_request(
             [
                 "git",
                 "push",
-                "-f",
+                "-uf",
                 remote_to_push,
                 "{}:{}".format(branch, remote_branch),
             ]
