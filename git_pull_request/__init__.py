@@ -622,7 +622,6 @@ def fork_and_push_pull_request(
             [
                 "git",
                 "push",
-                "--set-upstream",
                 "--force",
                 remote_to_push,
                 "{}:{}".format(branch, remote_branch),
