@@ -277,7 +277,10 @@ class TestGithubPRTemplate(fixtures.TestWithFixtures):
             gpr.git_get_title_and_message("master^^", "master"),
         )
 
-        count, title, message = gpr.git_get_title_and_message("master^^", "master",)
+        count, title, message = gpr.git_get_title_and_message(
+            "master^^",
+            "master",
+        )
 
         assert gpr.parse_pr_message(message) == ("# test", "")
 
