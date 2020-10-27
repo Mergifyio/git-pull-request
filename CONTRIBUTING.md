@@ -2,8 +2,8 @@
 
 First off, thanks for taking the time to contribute!
 
-The following as a set of guidelines for contributing to git-pull-request.
-These are mostly guidelines, not rules. Use your best judgment, and fell free
+The following is a set of guidelines for contributing to git-pull-request.
+These are mostly guidelines, not rules. Use your best judgment, and feel free
 to propose changes to this document in a pull request.
 
 ## Code of Conduct
@@ -11,7 +11,7 @@ to propose changes to this document in a pull request.
 This project and everyone participating in it is governed by the
 [git-pull-request Code of Conduct](CODE_OF_CONDUCT.md). By participating, you
 are expected to uphold this code. Please report unacceptable behavior to
-[jd@mergify.io](mailto:jd@mergify.io).
+[opensource@mergify.io](mailto:opensource@mergify.io).
 
 ## How Can I Contribute?
 
