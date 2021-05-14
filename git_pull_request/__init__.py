@@ -311,6 +311,7 @@ def git_pull_request(
     branch_prefix=None,
     dry_run=False,
     labels=None,
+    draft=False
 ):
     branch = git_get_branch_name()
     if not branch:
@@ -403,6 +404,7 @@ def git_pull_request(
             branch_prefix,
             dry_run,
             labels,
+            draft,
         )
 
     approve_login_password(host=hostname, user=user, password=password)
@@ -511,6 +513,7 @@ def fork_and_push_pull_request(
     branch_prefix,
     dry_run=False,
     labels=None,
+    draft=False,
 ):
 
     g_user = g.get_user()
@@ -674,21 +677,21 @@ def fork_and_push_pull_request(
                     LOG.info("%s\n", ptitle)
                     LOG.info("%s", body)
                 else:
-                    pull.edit(title=ptitle, body=body)
+                    pull.edit(title=ptitle, body=body, draft=draft)
                     LOG.debug("Updated pull-request title and body")
             elif ptitle:
                 if dry_run:
                     LOG.info("Would edit title")
                     LOG.info("%s\n", ptitle)
                 else:
-                    pull.edit(title=ptitle)
+                    pull.edit(title=ptitle, draft=draft)
                     LOG.debug("Updated pull-request title")
             elif body:
                 if dry_run:
                     LOG.info("Would edit body")
                     LOG.info("%s\n", body)
                 else:
-                    pull.edit(body=body)
+                    pull.edit(body=body, draft=draft)
                     LOG.debug("Updated pull-request body")
 
             if comment:
@@ -728,7 +731,7 @@ def fork_and_push_pull_request(
 
         try:
             pull = repo_to_fork.create_pull(
-                base=target_branch, head=head, title=title, body=message
+                base=target_branch, head=head, title=title, body=message, draft=draft
             )
         except github.GithubException as e:
             LOG.critical(_format_github_exception("create pull request", e))
@@ -765,6 +768,12 @@ class DownloadAndSetupAction(argparse.Action):
 
 def build_parser():
     parser = argparse.ArgumentParser(description="Creates a GitHub pull-request.")
+    parser.add_argument(
+        "--draft",
+        "-t",
+        action="store_true",
+        help="Mark pull request as draft",
+    )
     parser.add_argument(
         "--download",
         "-d",
@@ -887,6 +896,7 @@ def main():
             branch_prefix=args.branch_prefix,
             dry_run=args.dry_run,
             labels=args.label,
+            draft=args.draft,
         )
     except Exception:
         LOG.error("Unable to send pull request", exc_info=True)
