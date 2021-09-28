@@ -178,31 +178,6 @@ class Github:
                 )
                 return 37
 
-        if dry_run:
-            logger.info(
-                "Would force-push branch `%s' to remote `%s/%s'",
-                branch,
-                remote_to_push,
-                remote_branch,
-            )
-        else:
-            logger.info(
-                "Force-pushing branch `%s' to remote `%s/%s'",
-                branch,
-                remote_to_push,
-                remote_branch,
-            )
-            _run_shell_command(
-                [
-                    "git",
-                    "push",
-                    "--set-upstream",
-                    "--force",
-                    remote_to_push,
-                    "{}:{}".format(branch, remote_branch),
-                ]
-            )
-
         pulls = list(repo_to_fork.get_pulls(base=target_branch, head=head))
 
         nb_commits, git_title, git_message = git_get_title_and_message(
@@ -244,44 +219,25 @@ class Github:
                 if ptitle == pull.title and body == pull.body:
                     logger.debug("Pull-request title and body is already up to date")
                 elif ptitle and body:
-                    if dry_run:
-                        logger.info("Would edit title and body")
-                        logger.info("%s\n", ptitle)
-                        logger.info("%s", body)
-                    else:
-                        pull.edit(title=ptitle, body=body)
-                        logger.debug("Updated pull-request title and body")
+                    pull.edit(title=ptitle, body=body)
+                    logger.debug("Updated pull-request title and body")
                 elif ptitle:
-                    if dry_run:
-                        logger.info("Would edit title")
-                        logger.info("%s\n", ptitle)
-                    else:
-                        pull.edit(title=ptitle)
-                        logger.debug("Updated pull-request title")
+                    pull.edit(title=ptitle)
+                    logger.debug("Updated pull-request title")
                 elif body:
-                    if dry_run:
-                        logger.info("Would edit body")
-                        logger.info("%s\n", body)
-                    else:
-                        pull.edit(body=body)
-                        logger.debug("Updated pull-request body")
+                    pull.edit(body=body)
+                    logger.debug("Updated pull-request body")
 
                 if comment:
-                    if dry_run:
-                        logger.info('Would comment: "%s"', comment)
-                    else:
-                        # FIXME(jd) we should be able to comment directly on a PR
-                        # without getting it as an issue but pygithub does not
-                        # allow that yet
-                        repo_to_fork.get_issue(pull.number).create_comment(comment)
-                        logger.debug('Commented: "%s"', comment)
+                    # FIXME(jd) we should be able to comment directly on a PR
+                    # without getting it as an issue but pygithub does not
+                    # allow that yet
+                    repo_to_fork.get_issue(pull.number).create_comment(comment)
+                    logger.debug('Commented: "%s"', comment)
 
                 if labels:
-                    if dry_run:
-                        logger.info("Would add labels %s", labels)
-                    else:
-                        logger.debug("Adding labels %s", labels)
-                        pull.add_to_labels(*labels)
+                    logåger.debug("Adding labels %s", labels)
+                    pull.add_to_labels(*labels)
 
                 logger.info("Pull-request updated: %s", pull.html_url)
         else:
@@ -293,13 +249,7 @@ class Github:
 
             if title is None:
                 logger.critical("Pull-request message is empty, aborting")
-                return 40
-
-            if dry_run:
-                logger.info("Pull-request would be created.")
-                logger.info("Title: %s", title)
-                logger.info("Body: %s", message)
-                return
+                return 40å
 
             try:
                 pull = repo_to_fork.create_pull(
