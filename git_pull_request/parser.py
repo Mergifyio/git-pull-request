@@ -40,7 +40,7 @@ from git_pull_request.github import Github
 @click.option("--target-remote" "-n", prompt=False,
     help="The remote branch to send a pull-request to. Default is auto-detected from .git/config.")
 @click.option("--target-branch" "-n", prompt=False,
-    help="The local branch to send a pull-request to. Defautl current branch at local")
+    help="The local branch to send a pull-request to. Default current branch at local")
 @click.option("--title", "-t",
     help="Title of the pull request.")
 @click.option("--message", "-m",
@@ -64,18 +64,11 @@ from git_pull_request.github import Github
     )
 @click.option(
      "--fork",
-    default="auto",
-    type=click.Choice(["always", "never", "auto"], case_sensitive=False),
+    type=bool,
     help=(
-        "Fork behavior to create the pull-request "
-        "(auto: when repository can't be cloned, "
-        "always: always try to fork it "
-        "never: always use base repository)"
+        "Fork behavior whether create the pull-request"
     )
 )
-@click.option(
-    "--no-fork",
-    help="Don't fork to create the pull-request")
 @click.option(
     "--skip-editor",
     type=bool,
@@ -84,7 +77,7 @@ from git_pull_request.github import Github
     "--setup-only",
     default=False,
     help="Just setup the fork repo",
-)   
+)
 def main(download, download_and_setup, debug, target_remote, target_branch, title, message,  keep_message, label, branch_prefix, no_rebase, comment, plain_text, fork, setup_only, skip_editor):
     gh = Github()
     gh.git_pull_request(
@@ -100,9 +93,8 @@ def main(download, download_and_setup, debug, target_remote, target_branch, titl
         fork=fork,
         setup_only=setup_only,
         branch_prefix=branch_prefix,
-        labels=label,
-        
-    )
+        labels=label
+        )
 
 
 # if __name__ == "__main__":
