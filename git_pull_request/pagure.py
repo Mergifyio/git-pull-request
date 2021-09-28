@@ -11,12 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import daiquiri
 import requests
-
-
-LOG = daiquiri.getLogger("git-pull-request")
-
+from loguru import logger
 
 def is_pagure(hostname):
     return requests.get("https://%s/api/0/-/version" % hostname).ok
@@ -25,12 +21,12 @@ def is_pagure(hostname):
 class Client:
     """Pagure interface loosely compatible with the github client."""
 
-    def __init__(self, hostname, user, password, reponame_to_fork):
+    def __init__(self, hostname, user, password, repo_name_to_fork):
         """Client object hold all the necessary information."""
         self.host = hostname
         self.user = user
         self.token = password
-        self.reponame_to_fork = reponame_to_fork
+        self.repo_name_to_fork = repo_name_to_fork
         self.fork_path = "fork/%s/%s" % (self.user, self.reponame_to_fork)
         self.project_token = None
         self.session = requests.session()
@@ -93,7 +89,7 @@ class Client:
     def enable_pull_request(self, project):
         options = self.get("%s/options" % project)["settings"]
         if not options["pull_requests"]:
-            LOG.debug("Enabling pull-request on %s", project)
+            logger.debug("Enabling pull-request on %s", project)
             # TODO: update the options when
             # https://pagure.io/pagure/issue/4448 is solved, e.g.:
             # options["pull_requests"] = True
@@ -113,9 +109,9 @@ class Client:
         )
 
     def create_fork(self, _):
-        LOG.debug("check if the fork already exists")
+        logger.debug("check if the fork already exists")
         if not self.get(self.fork_path, error_ok=True):
-            LOG.info("requesting a fork creation")
+            logger.info("requesting a fork creation")
             # Repo can be $repo or $namespace/$repo
             repoinfo = self.reponame_to_fork.rsplit("/", 1)
             repo = repoinfo.pop()
@@ -217,4 +213,4 @@ class Client:
 
     @staticmethod
     def todo(*args, **kwargs):
-        LOG.warning("Updating title or adding comment is not implemented yet")
+        logger.warning("Updating title or adding comment is not implemented yet")
