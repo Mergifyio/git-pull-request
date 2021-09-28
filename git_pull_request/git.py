@@ -81,7 +81,7 @@ def _run_shell_command(cmd: list[str], input: str =None, raise_on_error: bool=Tr
     return out.strip()
 
 
-class git: 
+class Git: 
     
 
     def __init__(self):
@@ -249,3 +249,9 @@ class git:
         return PRContent(content=content)
         
 
+    def switch_new_branch(self, branch):
+        return _run_shell_command(["git", "checkout", "-b", branch])
+
+
+    def switch_branch(self, branch):
+        return _run_shell_command(["git", "checkout", branch])
