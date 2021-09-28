@@ -121,7 +121,7 @@ class Github:
 
         return retcode
 
-    def get_pull_request_template(self):
+    def _get_pull_request_template(self):
         filename = "PULL_REQUEST_TEMPLATE*"
         pr_template_paths = [
             filename,
@@ -143,6 +143,8 @@ class Github:
                         return t.read()
 
     def download_pull_request(self, pull_number): # refactory
+        raise RuntimeError("Please skip the download option.")
+
         pull = self.repo.get_pull(pull_number)
         if self.setup_remote:
             local_branch_name = pull.head.ref
@@ -169,60 +171,35 @@ class Github:
 
 
 
-    def fork_and_push_pull_request(
-        self,
-        g: github.Github,
-        hosttype,
-        repo_to_fork,
-        rebase,
-        target_remote,
-        target_branch,
-        branch,
-        user,
-        title,
-        message,
-        keep_message,
-        comment,
-        fork,
-        setup_only,
-        branch_prefix,
-        labels=None,
-        ):
+    def fork_and_push_pull_request(self):
 
-        g_user = g.get_user()
+        g_user = self.g.get_user()
 
         forked = False
-        if fork in ["always", "auto"]:
+        if self.fork:
             try:
-                repo_forked = g_user.create_fork(repo_to_fork)
+                repo_forked = g_user.create_fork(self.repo_to_fork)
             except github.GithubException as e:
                 if (
-                    fork == "auto"
-                    and e.status == 403
+                    e.status == 403
                     and "forking is disabled" in e.data["message"]
                 ):
                     forked = False
                     logger.info(
                         "Forking is disabled on target repository, " "using base repository"
                     )
-                else:
-                    logger.error(
-                        "Forking is disabled on target repository, " "can't fork",
-                        exc_info=True,
-                    )
-                    sys.exit(1)
             else:
                 forked = True
                 logger.info("Forked repository: %s", repo_forked.html_url)
                 forked_repo_id = RepositoryId(repo_forked.clone_url)
 
-        if branch_prefix is None and not forked:
+        if self.branch_prefix is None and not forked:
             branch_prefix = g_user.login
 
         if branch_prefix:
-            remote_branch = "{}/{}".format(branch_prefix, branch)
+            remote_branch = f"{branch_prefix}/{self.target_branch}"
         else:
-            remote_branch = branch
+            remote_branch = self.target_branch
 
         if forked:
             remote_to_push = git_remote_matching_url(repo_forked.clone_url)
