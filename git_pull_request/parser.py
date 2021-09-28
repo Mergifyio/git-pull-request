@@ -31,6 +31,8 @@ from git_pull_request.github import Github
 
 # Creates a GitHub pull-request.
 @click.command("pull-request")
+@click.option('-d', '--download', prompt=True, default=1, show_default=True, 
+    help='A number of the pull request, which will be checkouted')
 @click.option("--download-and-setup","-D", prompt=True, default=True, show_default=True,
     help='A number of the pull request, which will be checkouted. To be able to re-push it')
 @click.option("--debug", prompt=True, default=False, show_default=True,
@@ -83,7 +85,7 @@ from git_pull_request.github import Github
     default=False,
     help="Just setup the fork repo",
 )   
-def main(download_and_setup, debug, target_remote, target_branch, title, message,  keep_message, label, branch_prefix, no_rebase, comment, plain_text, fork, setup_only, skip_editor):
+def main(download, download_and_setup, debug, target_remote, target_branch, title, message,  keep_message, label, branch_prefix, no_rebase, comment, plain_text, fork, setup_only, skip_editor):
     gh = Github()
     gh.git_pull_request(
         target_remote=target_remote,
@@ -93,6 +95,7 @@ def main(download_and_setup, debug, target_remote, target_branch, title, message
         keep_message=keep_message,
         comment=comment,
         rebase=not no_rebase,
+        download=download,
         download_setup=download_and_setup,
         fork=fork,
         setup_only=setup_only,

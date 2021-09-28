@@ -13,9 +13,114 @@ from git_pull_request.git import Git, RepositoryId
 
 class Github:
     
-    def __init__(self, git:Git):
-        self.git = git;
-    
+    def __init__(self,
+        git:Git,
+        target_remote=None,
+        target_branch=None,
+        title=None,
+        message=None,
+        keep_message=None,
+        comment=None,
+        rebase=True,
+        download=None,
+        download_setup=False,
+        fork=True,
+        setup_only=False,
+        branch_prefix=None,
+        labels=None,):
+
+        self.git = git
+        self.target_remote=target_remote
+        self.target_branch=target_branch
+        self.title=title,
+        self.message=message,
+        self.keep_message=keep_message,
+        self.comment=comment,
+        self.rebase=rebase,
+        self.download=download,
+        self.download_setup=download_setup,
+        self.fork=fork,
+        self.setup_only=setup_only,
+        self.branch_prefix=branch_prefix,
+        self.label=labels
+
+        # set target_branch value
+        branch = self.git.get_branch_name()
+        if not branch:
+            logger.critical("Unable to find current branch")
+            return 10
+        logger.debug("Local branch name is %s", branch)
+        if target_branch and target_branch != branch:
+            try:
+                self.git.switch_new_branch(target_branch)
+            except RuntimeError:
+                self.git.switch_new_branch(target_branch)
+            else:
+                logger.critical("Unable change to target branch %s!", target_branch)
+                return 11
+        else:
+            self.target_branch = branch
+        
+        # set target_remote value
+        self.target_remote = target_remote\
+            or self.git.get_remote_branch_for_branch(target_branch)
+        if not self.target_remote:
+            logger.critical(
+                "Unable to find target remote for target branch `%s'", target_branch
+            )
+            return 20
+
+        logger.debug("Target remote for branch `%s' is `%s'", target_branch, target_remote)
+        
+        # set other values
+        self.target_url = self.git.get_remote_url(target_remote)
+        if not self.target_url:
+            logger.critical("Unable to find remote URL for remote `%s'", target_remote)
+            return 30
+
+        logger.debug("Remote URL for remote %s is %s", target_remote, self.target_url)
+
+        # set repo info
+        self.hosttype, self.host, self.user_to_fork, self.repo_to_fork = attr.astuple(
+            RepositoryId(self.target_url)
+        )
+        logger.debug(
+            "%s user and repository to fork: %s/%s on %s",
+            self.hosttype,
+            self.user_to_fork,
+            self.repo_to_fork,
+            self.host,
+        )
+
+        # set user credential info
+        self.user, self.password = self.git.get_login_password(host=self.host)
+        if not self.user or not self.password:
+            logger.critical(
+                "Unable to find your credentials for %s.\n"
+                "Make sure you have a git credential working.",
+                self.host,
+            )
+            return 35
+
+        logger.debug("Found %s user: %s password: <redacted>", self.host, self.user)
+
+        # create py-github client
+        kwargs = {}
+        if self.hostname != "github.com":
+            kwargs["base_url"] = "https://" + self.hostname + "/api/v3"
+            logger.debug("Using API base url `%s'", kwargs["base_url"])
+        self.g = github.Github(self.user, self.password, **kwargs)
+        self.repo = self.g.get_user(self.user_to_fork).get_repo(self.repo_to_fork)
+
+        if download:
+            retcode = self.download_pull_request(download)
+        else:
+            retcode = self.fork_and_push_pull_request()
+
+        self.git.approve_login_password(host=self.hostname, user=self.user, password=self.password)
+
+        return retcode
+
     def get_pull_request_template(self):
         filename = "PULL_REQUEST_TEMPLATE*"
         pr_template_paths = [
@@ -37,9 +142,9 @@ class Github:
                     with open(template_path) as t:
                         return t.read()
 
-    def download_pull_request(self, g, repo, target_remote, pull_number, setup_remote): # refactory
-        pull = repo.get_pull(pull_number)
-        if setup_remote:
+    def download_pull_request(self, pull_number): # refactory
+        pull = self.repo.get_pull(pull_number)
+        if self.setup_remote:
             local_branch_name = pull.head.ref
         else:
             local_branch_name = "pull/%d-%s-%s" % (
@@ -49,25 +154,18 @@ class Github:
             )
         target_ref = "pull/%d/head" % pull.number
 
-        _run_shell_command(["git", "fetch", target_remote, target_ref])
-        try:
-            _run_shell_command(["git", "checkout", local_branch_name], output=True)
-        except RuntimeError:
-            _run_shell_command(["git", "checkout", "-b", local_branch_name, "FETCH_HEAD"])
-        else:
-            _run_shell_command(["git", "reset", "--hard", "FETCH_HEAD"])
+        _run_shell_command(["git", "fetch", self.target_remote, target_ref])
+        
 
-        if setup_remote:
+        self.git.switch_forcedly_branch(local_branch_name)
+
+        if self.setup_remote:
             remote_name = "github-%s" % pull.user.login
             remote = self.get_remote_url(remote_name, raise_on_error=False)
             if not remote:
-                _run_shell_command(
-                    ["git", "remote", "add", remote_name, pull.head.repo.clone_url]
-                )
-            _run_shell_command(["git", "fetch", remote_name])
-            _run_shell_command(
-                ["git", "branch", "-u", "origin/%s" % pull.base.ref, local_branch_name]
-            )
+                self.git.add_remote_ulr(remote_name, pull.head.repo.clone_url)
+                self.git.fetch_branch(remote_name)
+                self.git.set_upper_branch("origin/%s" % pull.base.ref, local_branch_name)
 
 
 
@@ -116,7 +214,7 @@ class Github:
             else:
                 forked = True
                 logger.info("Forked repository: %s", repo_forked.html_url)
-                forked_repo_id = get_repository_id_from_url(repo_forked.clone_url)
+                forked_repo_id = RepositoryId(repo_forked.clone_url)
 
         if branch_prefix is None and not forked:
             branch_prefix = g_user.login
@@ -284,106 +382,4 @@ class Github:
 
 
 
-    def git_pull_request(
-        self,
-        target_remote=None,
-        target_branch=None,
-        title=None,
-        message=None,
-        keep_message=None,
-        comment=None,
-        rebase=True,
-        download=None,
-        download_setup=False,
-        fork=True,
-        setup_only=False,
-        branch_prefix=None,
-        labels=None,
-    ):
-        # set target_branch value
-        branch = self.git.get_branch_name()
-        if not branch:
-            logger.critical("Unable to find current branch")
-            return 10
-        logger.debug("Local branch name is %s", branch)
-        if target_branch and target_branch != branch:
-            try:
-                self.git.switch_new_branch(target_branch)
-            except RuntimeError:
-                self.git.switch_new_branch(target_branch)
-            else:
-                logger.critical("Unable change to target branch %s!", target_branch)
-                return 11
-        else:
-            target_branch = branch
-        # set target_remote value
-        target_remote = target_remote or self.git.get_remote_branch_for_branch(target_branch)
-        if not target_remote:
-            logger.critical(
-                "Unable to find target remote for target branch `%s'", target_branch
-            )
-            return 20
-
-        logger.debug("Target remote for branch `%s' is `%s'", target_branch, target_remote)
-        # set other values
-        target_url = self.git.get_remote_url(target_remote)
-        if not target_url:
-            logger.critical("Unable to find remote URL for remote `%s'", target_remote)
-            return 30
-
-        logger.debug("Remote URL for remote %s is %s", target_remote, target_url)
-
-        hosttype, hostname, user_to_fork, reponame_to_fork = attr.astuple(
-            RepositoryId(target_url)
-        )
-        logger.debug(
-            "%s user and repository to fork: %s/%s on %s",
-            hosttype,
-            user_to_fork,
-            reponame_to_fork,
-            hostname,
-        )
-
-        user, password = self.git.get_login_password(host=hostname)
-        if not user or not password:
-            logger.critical(
-                "Unable to find your credentials for %s.\n"
-                "Make sure you have a git credential working.",
-                hostname,
-            )
-            return 35
-
-        logger.debug("Found %s user: %s password: <redacted>", hostname, user)
-
-
-        kwargs = {}
-        if hostname != "github.com":
-            kwargs["base_url"] = "https://" + hostname + "/api/v3"
-            logger.debug("Using API base url `%s'", kwargs["base_url"])
-        g = github.Github(user, password, **kwargs)
-        repo = g.get_user(user_to_fork).get_repo(reponame_to_fork)
-
-
-        else:
-            retcode = self.fork_and_push_pull_request(
-                g,
-                hosttype,
-                repo,
-                rebase,
-                target_remote,
-                target_branch,
-                branch,
-                user,
-                title,
-                message,
-                keep_message,
-                comment,
-                fork,
-                setup_only,
-                branch_prefix,
-                labels,
-            )
-
-        self.approve_login_password(host=hostname, user=user, password=password)
-
-        return retcode
+   

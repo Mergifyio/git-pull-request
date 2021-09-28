@@ -252,6 +252,25 @@ class Git:
     def switch_new_branch(self, branch):
         return _run_shell_command(["git", "checkout", "-b", branch])
 
-
     def switch_branch(self, branch):
         return _run_shell_command(["git", "checkout", branch])
+        
+
+    def switch_forcedly_branch(self, branch):
+        try :
+            self.switch_branch(branch)
+        except RuntimeError:
+            self.switch_new_branch(branch)
+        else:
+            raise RuntimeError("Unable create new branch {branch}")
+    
+    def add_remote_ulr(self, remote_branch, url):
+        return  _run_shell_command(
+            ["git", "remote", "add", remote_branch, url])
+    
+    def fetch_branch(self, branch):
+        return _run_shell_command(["git", "fetch", branch])
+    
+    def set_upper_branch(self, remote_branch, local_branch):
+        return _run_shell_command(
+        ["git", "branch", "-u", remote_branch, local_branch])
