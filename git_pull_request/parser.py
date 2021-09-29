@@ -65,13 +65,15 @@ from git_pull_request.github import Github
     help="Prefix of the remote branch")
 @click.option("--update", "-u", prompt=True, default=True, show_default=True,
     help="If false, update local change with rebasing the remote branch. Default True.")
+@click.option("--user", prompt=True, type=str,
+    help="The username of github to log in, which will store in \"git credential\"")
+@click.option("--token", "-u", prompt=True, type=str,
+    help="The personal token of github to log in, which will store in \"git credential\"."
+    "If empty, we will promot in terminal to input corresponding infos.\n"
+    "How to get you personal token? Please check this https://docs.github.com/en/authentication"
+    "/keeping-your-account-and-data-secure/creating-a-personal-access-token")
 
-@click.option(
-    "--setup-only",
-    default=False,
-    help="Just setup the fork repo",
-)
-def main(debug, target_url, target_remote, target_branch, title, message, label, branch_prefix, update, comment, setup_only, skip_editor):
+def main(debug, target_url, target_remote, target_branch, title, message, label, branch_prefix, update, comment, skip_editor, user, token):
     if not debug:
         log_info()
     
@@ -85,9 +87,11 @@ def main(debug, target_url, target_remote, target_branch, title, message, label,
         message=message,
         comment=comment,
         update=update,
-        setup_only=setup_only,
         branch_prefix=branch_prefix,
-        labels=label
+        labels=label,
+        skip_editor=skip_editor,
+        user=user,
+        token=token,
         )
 
 def log_info():

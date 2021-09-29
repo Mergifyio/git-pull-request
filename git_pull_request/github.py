@@ -1,8 +1,6 @@
 import os
 import github
-import sys
 import glob
-import attr
 
 from loguru import logger
 
@@ -14,17 +12,20 @@ from git_pull_request import utility
 class Github:
 
     def __init__(self,
-                 git:Git,
-                 target_url=None,
-                 target_remote=None,
-                 target_branch=None,
-                 title=None,
-                 message=None,
-                 keep_message=None,
-                 comment=None,
-                 update=True,
-                 branch_prefix=None,
-                 labels=None,):
+                git:Git,
+                target_url=None,
+                target_remote=None,
+                target_branch=None,
+                title=None,
+                message=None,
+                keep_message=None,
+                comment=None,
+                update=True,
+                branch_prefix=None,
+                labels=None,
+                skip_editor=None,
+                user=None,
+                token=None):
 
         self.git = git
         self.title = title,
@@ -34,6 +35,9 @@ class Github:
         self.update = update,
         self.branch_prefix = branch_prefix,
         self.label = labels
+        self.user = user
+        self.skip_editor = skip_editor
+        self.token = token
 
         try:
             self.local_branch = self.git.get_branch_name()
@@ -45,28 +49,18 @@ class Github:
             utility.check_not_none_and_logger(self.target_branch, "Unable find remote target branch", os.EX_UNAVAILABLE)
             utility.check_not_none_and_logger(self.target_remote, "Unable find remote value", os.EX_UNAVAILABLE)
             utility.check_not_none_and_logger(self.target_url, "Unable find remote url", os.EX_UNAVAILABLE)
-        logger.debug(f"Basic Info: Remote: {self.target_remote} Remote URL: {self.target_url} "
+        logger.debug(f"Basic Info: Remote: {self.target_remote} Remote URL: {self.target_url}. "
              + f"Remote branch: {self.target_branch} Local Branch: {self.local_branch}")
 
 
-        self.target_gh = Repository(self.target_url)
-        logger.debug(f"user and repository to fork: {self.target_gh.user}/{self.target_gh.repo} on {self.target_gh.host}")
+        self.target_repo = Repository(self.target_url)
+        logger.debug(f"user and repository to fork: {self.target_repo.user}/{self.target_repo.repo} on {self.target_repo.host}")
 
-        # set user credential info
-        self.user, self.password = self.git.get_login_password(host=self.host)
-        if not self.user or not self.password:
-            logger.critical(
-                "Unable to find your credentials for %s.\n"
-                "Make sure you have a git credential working.",
-                self.host,
-            )
-            return 35
-
+        self._credential()
         logger.debug("Found %s user: %s password: <redacted>", self.host, self.user)
 
-        # create py-github client
-        self.g = github.Github(self.user, self.password)
-        self.repo = self.g.get_user(self.user_to_fork).get_repo(self.repo_to_fork)
+        self.gh = github.Github(self.user, self.password)
+        self.gh_repo = self.gh.get_user(self.user_to_fork).get_repo(self.repo_to_fork)
 
         if download:
             retcode = self.download_pull_request(download)
@@ -300,3 +294,12 @@ class Github:
             "Check %s for more information."
             % (action, exc.data.get("message"), exc.status, errors_msg, url)
         )
+
+    def _credential(self):
+        if not self.user or not self.token:
+            self.user, self.token = self.git.get_login_password(host=self.host)
+        
+        utility.check_not_none_and_logger(self.user, f"Unable to find your user of {self.host}. "
+            "Make sure you have a git credential working.", os.EX_UNAVAILABLE)
+        utility.check_not_none_and_logger(self.token, f"Unable to find your token of {self.host}. "
+            "Make sure you have a git credential working.", os.EX_UNAVAILABLE)

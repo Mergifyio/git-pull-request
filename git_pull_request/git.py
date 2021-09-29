@@ -76,7 +76,6 @@ def _run_shell_command(cmd: list[str], input: str =None, raise_on_error: bool=Tr
 
 class Git: 
     
-
     def __init__(self):
         self.username = None
         self.password = None
