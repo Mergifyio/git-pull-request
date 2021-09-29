@@ -7,19 +7,14 @@ import attr
 import tempfile
 from urllib import parse
 from loguru import logger
-# import github
-
-from git_pull_request import utility
-from git_pull_request import pagure
-from git_pull_request import textparse
 from git_pull_request.content import PRContent
 
-import git_pull_request
+
 
 SHORT_HASH_LEN = 5
 
 @attr.s(eq=False, hash=False)
-class RepositoryId:
+class Repository:
 
     def __eq__(self, other):
         """
@@ -85,8 +80,8 @@ class Git:
     def __init__(self):
         self.username = None
         self.password = None
-        self.host = "https"
-        self.protocol = "github.com"
+        self.protocol = "https"
+        self.host = "github.com"
 
         self.conf = self.git_conf()
         self.commit_format = {
