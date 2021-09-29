@@ -14,8 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
 import click
-import argparse
 from loguru import logger
 
 from git_pull_request.github import Github
@@ -51,9 +51,9 @@ from git_pull_request.github import Github
 @click.option("--label", "-l",
     help="The labels to add to the pull request. Can be used multiple times.")
 @click.option("--branch-prefix", prompt=True, default=True, show_default=True,
-    help="Prefix remote branch")
-@click.option("--no-rebase", "-R", prompt=True, default=False, show_default=True,
-    help="Don't rebase branch before pushing.")
+    help="Prefix of the remote branch")
+@click.option("--update", "-R", prompt=True, default=False, show_default=True,
+    help="If true, update local change with rebasing the remote branch.")
 @click.option(
     "--comment", "-C", 
     help="Comment to publish when updating the pull-request")
@@ -63,13 +63,6 @@ from git_pull_request.github import Github
         Useful when just refreshing an already-open pull request.",
     )
 @click.option(
-     "--fork",
-    type=bool,
-    help=(
-        "Fork behavior whether create the pull-request"
-    )
-)
-@click.option(
     "--skip-editor",
     type=bool,
     help="If true, Don't fork to create the pull-request")
@@ -78,8 +71,12 @@ from git_pull_request.github import Github
     default=False,
     help="Just setup the fork repo",
 )
-def main(download, download_and_setup, debug, target_remote, target_branch, title, message,  keep_message, label, branch_prefix, no_rebase, comment, plain_text, fork, setup_only, skip_editor):
+def main(download, download_and_setup, debug, target_remote, target_branch, title, message,  keep_message, label, branch_prefix, update, comment, setup_only, skip_editor):
+    if not debug:
+        log_info()
+        
     gh = Github()
+    logger.level()
     gh.git_pull_request(
         target_remote=target_remote,
         target_branch=target_branch,
@@ -87,15 +84,14 @@ def main(download, download_and_setup, debug, target_remote, target_branch, titl
         message=message,
         keep_message=keep_message,
         comment=comment,
-        rebase=not no_rebase,
+        update=update,
         download=download,
         download_setup=download_and_setup,
-        fork=fork,
         setup_only=setup_only,
         branch_prefix=branch_prefix,
         labels=label
         )
 
-
-# if __name__ == "__main__":
-#     sys.exit(main())
+def log_info():
+    logger.remove()
+    logger.add(sys.stderr, level="INFO")

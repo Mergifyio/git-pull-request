@@ -141,8 +141,7 @@ class Git:
         output = _run_shell_command(request)
         logger.info(f"git credential status:{output}")
 
-    # TODO delete ？
-    def remote_matching_url(self, wanted_url):
+    def get_matching_remote(self, wanted_url):
         wanted_id = self.get_repository_id_from_url(wanted_url)
 
         remotes = _run_shell_command(["git", "remote", "-v"])
@@ -165,19 +164,6 @@ class Git:
         self.conf.set_pr_config("hosttype", hosttype)
 
 
-    # TODO refactory
-    def git_config_add_argument(self, parser, option, *args, **kwargs):
-        default = kwargs.get("default", None)
-        is_assign = kwargs.get("action") in ["store_true", "store_false"]
-        if is_assign and not default:
-            default = False
-        default = self.conf.get_pr_config(option[2:], default)
-        if is_assign and isinstance(default, str):
-            default = distutils.util.str2bool(default)
-        kwargs["default"] = default
-        return parser.add_argument(option, *args, **kwargs)
-
-
     def get_branch_name(self):
         branch = _run_shell_command(["git", "rev-parse", "--abbrev-ref", "HEAD"])
         if branch.upper() == "HEAD":
@@ -193,6 +179,9 @@ class Git:
         if branch.startswith("refs/heads/"):
             return branch[11:]
         return branch
+
+    def get_remote_for_branch(self, branch):
+        return self.conf.get_config("branch." + branch + ".remote")
 
     def get_commit_body(self, commit):
         return _run_shell_command(["git", "show", "--format=%b", commit, "--"])
@@ -272,7 +261,7 @@ class Git:
             ["git", "remote", "add", remote_branch, url])
     
     def fetch_branch(self, repo, branch):
-        return _run_shell_command(["git", "fetch", branch])
+        return _run_shell_command(["git", "fetch", repo, branch])
     
     def set_upper_branch(self, remote_branch, local_branch):
         return _run_shell_command(

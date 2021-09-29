@@ -21,7 +21,7 @@ class Github:
         message=None,
         keep_message=None,
         comment=None,
-        rebase=True,
+        update=True,
         download=None,
         download_setup=False,
         fork=True,
@@ -36,7 +36,7 @@ class Github:
         self.message=message,
         self.keep_message=keep_message,
         self.comment=comment,
-        self.rebase=rebase,
+        self.update=update,
         self.download=download,
         self.download_setup=download_setup,
         self.fork=fork,
@@ -63,7 +63,7 @@ class Github:
         
         # set target_remote value
         self.target_remote = target_remote\
-            or self.git.get_remote_branch_for_branch(target_branch)
+            or self.git.get_remote_for_branch(target_branch)
         if not self.target_remote:
             logger.critical(
                 "Unable to find target remote for target branch `%s'", target_branch
@@ -172,26 +172,24 @@ class Github:
 
 
     def fork_and_push_pull_request(self):
-
         g_user = self.g.get_user()
-
+        
         forked = False
-        if self.fork:
-            try:
-                repo_forked = g_user.create_fork(self.repo_to_fork)
-            except github.GithubException as e:
-                if (
-                    e.status == 403
-                    and "forking is disabled" in e.data["message"]
-                ):
-                    forked = False
-                    logger.info(
-                        "Forking is disabled on target repository, " "using base repository"
-                    )
-            else:
-                forked = True
-                logger.info("Forked repository: %s", repo_forked.html_url)
-                forked_repo_id = RepositoryId(repo_forked.clone_url)
+        try:
+            repo_forked = g_user.create_fork(self.repo_to_fork)
+        except github.GithubException as e:
+            if (
+                e.status == 403
+                and "forking is disabled" in e.data["message"]
+            ):
+                forked = False
+                logger.info(
+                    "Forking is disabled on target repository, " "using base repository"
+                )
+        else:
+            forked = True
+            logger.info("Forked repository: %s", repo_forked.html_url)
+            forked_repo_id = RepositoryId(repo_forked.clone_url)
 
         if self.branch_prefix is None and not forked:
             branch_prefix = g_user.login
@@ -202,30 +200,25 @@ class Github:
             remote_branch = self.target_branch
 
         if forked:
-            remote_to_push = git_remote_matching_url(repo_forked.clone_url)
+            remote_to_push = self.git.get_matching_remote(repo_forked.clone_url)
 
             if remote_to_push:
                 logger.debug(
                     "Found forked repository already in remote as `%s'", remote_to_push
                 )
             else:
-                remote_to_push = hosttype
-                _run_shell_command(
-                    ["git", "remote", "add", remote_to_push, repo_forked.clone_url]
-                )
-                logger.info("Added forked repository as remote `%s'", remote_to_push)
-            head = "{}:{}".format(forked_repo_id.user, branch)
+                remote_to_push = self.hosttype
+                self.git.add_remote_ulr(remote_to_push, repo_forked.clone_url)
+                logger.info("Added forked repository as remote %s : %s", remote_to_push, repo_forked.clone_url)
+            head = f"{forked_repo_id.user}:{self.branch}" #  target branch  ? TODO
         else:
-            remote_to_push = target_remote
-            head = "{}:{}".format(repo_to_fork.owner.login, remote_branch)
+            remote_to_push = self.target_remote
+            head = f"{self.repo_to_fork.owner.login}:{remote_branch}"
 
-        if setup_only:
-            logger.info("Fetch existing branches of remote `%s`", remote_to_push)
-            _run_shell_command(["git", "fetch", remote_to_push])
-            return
-
-        if rebase:
-            _run_shell_command(["git", "remote", "update", target_remote])
+      
+        if self.update:
+            self.git.fetch_branch()
+            _run_shell_command(["git", "remote", "update", self.target_remote])
 
             logger.info(
                 "Rebasing branch `%s' on branch `%s/%s'",
