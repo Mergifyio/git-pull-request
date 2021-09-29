@@ -7,70 +7,46 @@ import attr
 from loguru import logger
 
 from git_pull_request.git import _run_shell_command
-from git_pull_request import pagure
-from git_pull_request.pagure import Client
 from git_pull_request.git import Git, RepositoryId
+from git_pull_request import utility
+
 
 class Github:
-    
+
     def __init__(self,
-        git:Git,
-        target_remote=None,
-        target_branch=None,
-        title=None,
-        message=None,
-        keep_message=None,
-        comment=None,
-        update=True,
-        download=None,
-        fork=True,
-        setup_only=False,
-        branch_prefix=None,
-        labels=None,):
+                 git:Git,
+                 target_url=None,
+                 target_remote=None,
+                 target_branch=None,
+                 title=None,
+                 message=None,
+                 keep_message=None,
+                 comment=None,
+                 update=True,
+                 branch_prefix=None,
+                 labels=None,):
 
         self.git = git
-        self.target_remote=target_remote
-        self.target_branch=target_branch
-        self.title=title,
-        self.message=message,
-        self.keep_message=keep_message,
-        self.comment=comment,
-        self.update=update,
-        self.download=download,
-        self.fork=fork,
-        self.setup_only=setup_only,
-        self.branch_prefix=branch_prefix,
-        self.label=labels
+        self.title = title,
+        self.message = message,
+        self.keep_message = keep_message,
+        self.comment = comment,
+        self.update = update,
+        self.branch_prefix = branch_prefix,
+        self.label = labels
 
-        # set branches
         try:
             self.local_branch = self.git.get_branch_name()
+            self.target_branch = target_branch or self.git.get_remote_branch_for_branch(self.local_branch)
+            self.target_remote = target_remote or self.git.get_remote_for_branch(target_branch)
+            self.target_url = target_url or self.git.get_remote_url(target_remote)
         except RuntimeError:
-            logger.critical("Unable find current branch")
-            return os.EX_UNAVAILABLE
-        logger.debug("Local branch name is %s", self.local_branch)
-        
-        if not self.target_branch:
-            self.git.get_remote_branch_for_branch(self.local_branch)
-        
-        # set target_remote value
-        self.target_remote = target_remote\
-            or self.git.get_remote_for_branch(target_branch)
-        if not self.target_remote:
-            logger.critical(
-                "Unable to find target remote for target branch `%s'", target_branch
-            )
-            return 20
-
-        logger.debug("Target remote for branch `%s' is `%s'", target_branch, target_remote)
-        
-        # set other values
-        self.target_url = self.git.get_remote_url(target_remote)
-        if not self.target_url:
-            logger.critical("Unable to find remote URL for remote `%s'", target_remote)
-            return 30
-
-        logger.debug("Remote URL for remote %s is %s", target_remote, self.target_url)
+            utility.check_not_none_and_logger(self.local_branch, "Unable find current branch", os.EX_UNAVAILABLE)
+            utility.check_not_none_and_logger(self.target_branch, "Unable find remote target branch", os.EX_UNAVAILABLE)
+            utility.check_not_none_and_logger(self.target_remote, "Unable find remote value", os.EX_UNAVAILABLE)
+            utility.check_not_none_and_logger(self.target_url, "Unable find remote url", os.EX_UNAVAILABLE)
+        logger.debug(f"Basic Info: Remote: {self.target_remote} Remote URL: {self.target_url} "
+             + f"Remote branch: {self.target_branch} Local Branch: {self.local_branch}")
 
         # set repo info
         self.hosttype, self.host, self.user_to_fork, self.repo_to_fork = attr.astuple(
@@ -130,7 +106,7 @@ class Github:
                     with open(template_path) as t:
                         return t.read()
 
-    def download_pull_request(self, pull_number): # refactory
+    def download_pull_request(self, pull_number):  # refactory
         raise RuntimeError("Please skip the download option.")
 
         pull = self.repo.get_pull(pull_number)
@@ -145,7 +121,6 @@ class Github:
         target_ref = "pull/%d/head" % pull.number
 
         _run_shell_command(["git", "fetch", self.target_remote, target_ref])
-        
 
         self.git.switch_forcedly_branch(local_branch_name)
 
@@ -157,11 +132,9 @@ class Github:
                 self.git.fetch_branch(remote_name)
                 self.git.set_upper_branch("origin/%s" % pull.base.ref, local_branch_name)
 
-
-
     def fork_and_push_pull_request(self):
         g_user = self.g.get_user()
-        
+
         forked = False
         try:
             repo_forked = g_user.create_fork(self.repo_to_fork)
@@ -198,12 +171,11 @@ class Github:
                 remote_to_push = self.hosttype
                 self.git.add_remote_ulr(remote_to_push, repo_forked.clone_url)
                 logger.info("Added forked repository as remote %s : %s", remote_to_push, repo_forked.clone_url)
-            head = f"{forked_repo_id.user}:{self.branch}" #  target branch  ? TODO
+            head = f"{forked_repo_id.user}:{self.branch}"  # target branch  ? TODO
         else:
             remote_to_push = self.target_remote
             head = f"{self.repo_to_fork.owner.login}:{remote_branch}"
 
-      
         if self.update:
             self.git.fetch_branch()
             _run_shell_command(["git", "remote", "update", self.target_remote])
@@ -325,7 +297,6 @@ class Github:
                 logger.debug("Adding labels %s", labels)
                 pull.add_to_labels(*labels)
 
-
     def _format_github_exception(action, exc):
         url = exc.data.get("documentation_url", "GitHub documentation")
         errors_msg = "\n".join(
@@ -337,7 +308,3 @@ class Github:
             "Check %s for more information."
             % (action, exc.data.get("message"), exc.status, errors_msg, url)
         )
-
-
-
-   

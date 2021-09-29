@@ -78,6 +78,7 @@ def main(debug, target_url, target_remote, target_branch, title, message, label,
     logger.level()
     gh = Github(
         Git(),
+        target_url=target_url,
         target_remote=target_remote,
         target_branch=target_branch,
         title=title,
