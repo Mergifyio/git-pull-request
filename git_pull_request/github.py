@@ -23,7 +23,6 @@ class Github:
         comment=None,
         update=True,
         download=None,
-        download_setup=False,
         fork=True,
         setup_only=False,
         branch_prefix=None,
@@ -38,28 +37,21 @@ class Github:
         self.comment=comment,
         self.update=update,
         self.download=download,
-        self.download_setup=download_setup,
         self.fork=fork,
         self.setup_only=setup_only,
         self.branch_prefix=branch_prefix,
         self.label=labels
 
-        # set target_branch value
-        branch = self.git.get_branch_name()
-        if not branch:
-            logger.critical("Unable to find current branch")
-            return 10
-        logger.debug("Local branch name is %s", branch)
-        if target_branch and target_branch != branch:
-            try:
-                self.git.switch_new_branch(target_branch)
-            except RuntimeError:
-                self.git.switch_new_branch(target_branch)
-            else:
-                logger.critical("Unable change to target branch %s!", target_branch)
-                return 11
-        else:
-            self.target_branch = branch
+        # set branches
+        try:
+            self.local_branch = self.git.get_branch_name()
+        except RuntimeError:
+            logger.critical("Unable find current branch")
+            return os.EX_UNAVAILABLE
+        logger.debug("Local branch name is %s", self.local_branch)
+        
+        if not self.target_branch:
+            self.git.get_remote_branch_for_branch(self.local_branch)
         
         # set target_remote value
         self.target_remote = target_remote\
@@ -105,11 +97,7 @@ class Github:
         logger.debug("Found %s user: %s password: <redacted>", self.host, self.user)
 
         # create py-github client
-        kwargs = {}
-        if self.hostname != "github.com":
-            kwargs["base_url"] = "https://" + self.hostname + "/api/v3"
-            logger.debug("Using API base url `%s'", kwargs["base_url"])
-        self.g = github.Github(self.user, self.password, **kwargs)
+        self.g = github.Github(self.user, self.password)
         self.repo = self.g.get_user(self.user_to_fork).get_repo(self.repo_to_fork)
 
         if download:

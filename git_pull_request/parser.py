@@ -18,75 +18,72 @@ import sys
 import click
 from loguru import logger
 
+from git_pull_request.git import Git
 from git_pull_request.github import Github
 
 
-# class DownloadAndSetupAction(argparse.Action):
-#     def __call__(self, parser, namespace, values, option_strings=None):
-#         setattr(namespace, "download", values)
-#         if self.dest == "download":
-#             setattr(namespace, "download_setup", False)
-#         else:
-#             setattr(namespace, "download_setup", True)
-
 # Creates a GitHub pull-request.
 @click.command("pull-request")
-@click.option('-d', '--download', prompt=True, default=1, show_default=True, 
-    help='A number of the pull request, which will be checkouted')
-@click.option("--download-and-setup","-D", prompt=True, default=True, show_default=True,
-    help='A number of the pull request, which will be checkouted. To be able to re-push it')
 @click.option("--debug", prompt=True, default=False, show_default=True,
     help="If true, enable debugging.")
-@click.option("--target-remote" "-n", prompt=False,
-    help="The remote branch to send a pull-request to. Default is auto-detected from .git/config.")
-@click.option("--target-branch" "-n", prompt=False,
-    help="The local branch to send a pull-request to. Default current branch at local")
+@click.option("--target-url" "-r", prompt=False,
+    help="The remote url of branch to send a pull-request to. Default is auto-detected from .git/config. "
+    "There options, target-url, target-remote and target-branch, only needed when you cloned from your repository, or you want "
+    "to create a pull-request to another repository.\n" 
+    "For example, you can check you target url by \"git config --get \"remote.origin.url\"\""
+    )
+@click.option("--target-remote" "-r", prompt=False,
+    help="The remote name of the target branch to send a pull-request to. Default is auto-detected from .git/config. "
+    "There options, target-url, target-remote and target-branch, only needed when you cloned from your repository, or you want "
+    "to create a pull-request to another repository.\n"
+    "As a example, target-remote of a cloned repository from other other people ususally is \"origin\"."
+    )
+@click.option("--target-branch" "-b", prompt=False,
+    help="The local branch to send a pull-request to. Default current branch at local"
+    "There options, target-url, target-remote and target-branch, only needed when you cloned from your repository, or you want "
+    "to create a pull-request to another repository.\n"
+    )
 @click.option("--title", "-t",
     help="Title of the pull request.")
 @click.option("--message", "-m",
-    help="Title of the pull request.")
-@click.option("--keep-message", "-k", prompt=True, default=True, show_default=True,
-    help="Don't open an editor to change the pull request message. \
-        Useful when just refreshing an already-open pull request.")
-@click.option("--label", "-l",
-    help="The labels to add to the pull request. Can be used multiple times.")
-@click.option("--branch-prefix", prompt=True, default=True, show_default=True,
-    help="Prefix of the remote branch")
-@click.option("--update", "-R", prompt=True, default=False, show_default=True,
-    help="If true, update local change with rebasing the remote branch.")
+    help="Message of the pull request.")
 @click.option(
     "--comment", "-C", 
     help="Comment to publish when updating the pull-request")
 @click.option(
     "--plain-text",
-    help="Don't open an editor to change the pull request message. \
-        Useful when just refreshing an already-open pull request.",
+    help="For a existing pull-request, Don't open an editor to change the pull request message.",
     )
 @click.option(
     "--skip-editor",
-    type=bool,
-    help="If true, Don't fork to create the pull-request")
+    type=str,
+    help="If not empty, use parameter of --title and --message instead of " 
+    "opening edition for pull-requester content.")
+@click.option("--label", "-l",
+    help="The labels to add to the pull request. Can be used multiple times.")
+@click.option("--branch-prefix", prompt=True, default=True, show_default=True,
+    help="Prefix of the remote branch")
+@click.option("--update", "-u", prompt=True, default=True, show_default=True,
+    help="If false, update local change with rebasing the remote branch. Default True.")
+
 @click.option(
     "--setup-only",
     default=False,
     help="Just setup the fork repo",
 )
-def main(download, download_and_setup, debug, target_remote, target_branch, title, message,  keep_message, label, branch_prefix, update, comment, setup_only, skip_editor):
+def main(debug, target_url, target_remote, target_branch, title, message, label, branch_prefix, update, comment, setup_only, skip_editor):
     if not debug:
         log_info()
-        
-    gh = Github()
+    
     logger.level()
-    gh.git_pull_request(
+    gh = Github(
+        Git(),
         target_remote=target_remote,
         target_branch=target_branch,
         title=title,
         message=message,
-        keep_message=keep_message,
         comment=comment,
         update=update,
-        download=download,
-        download_setup=download_and_setup,
         setup_only=setup_only,
         branch_prefix=branch_prefix,
         labels=label
