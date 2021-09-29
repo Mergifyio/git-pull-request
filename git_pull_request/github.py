@@ -7,7 +7,7 @@ import attr
 from loguru import logger
 
 from git_pull_request.git import _run_shell_command
-from git_pull_request.git import Git, RepositoryId
+from git_pull_request.git import Git, Repository
 from git_pull_request import utility
 
 
@@ -48,17 +48,9 @@ class Github:
         logger.debug(f"Basic Info: Remote: {self.target_remote} Remote URL: {self.target_url} "
              + f"Remote branch: {self.target_branch} Local Branch: {self.local_branch}")
 
-        # set repo info
-        self.hosttype, self.host, self.user_to_fork, self.repo_to_fork = attr.astuple(
-            RepositoryId(self.target_url)
-        )
-        logger.debug(
-            "%s user and repository to fork: %s/%s on %s",
-            self.hosttype,
-            self.user_to_fork,
-            self.repo_to_fork,
-            self.host,
-        )
+
+        self.target_gh = Repository(self.target_url)
+        logger.debug(f"user and repository to fork: {self.target_gh.user}/{self.target_gh.repo} on {self.target_gh.host}")
 
         # set user credential info
         self.user, self.password = self.git.get_login_password(host=self.host)
