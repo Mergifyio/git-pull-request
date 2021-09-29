@@ -22,46 +22,44 @@ SHORT_HASH_LEN = 5
 class RepositoryId:
 
     def __eq__(self, other):
+        """
+            one excate identical example as follows: 
+            >>> parse.urlparse("https://github.com/volcengine/volc-sdk-python.git")
+            ParseResult(scheme='https', netloc='github.com', path='/volcengine/volc-sdk-python.git', params='', query='', fragment='')
+            >>> parse.urlparse("git@github.com:volcengine/volc-sdk-python.git")
+            ParseResult(scheme='', netloc='', path='git@github.com:volcengine/volc-sdk-python.git', params='', query='', fragment='')
+            
+            host: github.com
+            user: volcengine
+            repo: volc-sdk-python.git
+        """
         return (
-            self.host_type == other.host_type
-            and self.hostname.lower() == other.hostname.lower()
+            self.host.lower() == other.host.lower()
             and self.user.lower() == other.user.lower()
-            and self.repository.lower() == other.repository.lower()
+            and self.repo.lower() == other.repo.lower()
         )
     
-    def __init__(self, url: str = None):
+    def __init__(self, url: str = ""):
         """Return hostype, hostname, user and repository to fork from.
 
+ 
         :param url: The URL to parse
         :return: hosttype, hostname, user, repository
+        
         """
-        pass 
-        # parsed = parse.urlparse(url)
-        # if parsed.netloc == "":
-        #     # Probably ssh
-        #     host, sep, path = parsed.path.partition(':')
-        #     if "@" in host:
-        #         username, sep, host = host.partition("@")
-        # else:
-        #     path = parsed.path[1:].strip("/")
-        #     host = parsed.netloc
-        #     if "@" in host:
-        #         username, sep, host = host.partition("@")
-        # self.hosttype = self.get_host_type(host)
-        # self.user, self.repo = path.split("/", 1)
+        parsed = parse.urlparse(url)
+        if parsed.scheme == "https": # not empty scheme usually is https
+            path = parsed.path.strip("abc")
+            self.host = parsed.netloc
+        elif not parsed.scheme and "@" in parsed.path: # we assume that the url is the form of ssh 
+            ssh, _, path = parsed.path.partition(':')
+            _, _, self.host = ssh.partition("@")
+        else:
+           raise ValueError("Unsupported scheme {pared.scheme}")
+        self.user, self.repo = path.split("/", 1)
+        if self.repo.endswith(".git"):
+            self.repo = self.repo[:-4]
 
-        # if self.repo.endswith(".git"):
-        #     self.repo = self.repo[:-4]
-
-    # def get_hosttype(self, host): #TODO FIx
-    #     hosttype = git_get_config_hosttype()
-    #     if hosttype == "":
-    #         if pagure.is_pagure(host):
-    #             hosttype = "pagure"
-    #         else:
-    #             hosttype = "github"
-    #         git_set_config_hosttype(hosttype)
-    #     return hosttype
 
 def _run_shell_command(cmd: list[str], input: str =None, raise_on_error: bool=True) -> str:
     logger.debug("running %s", cmd)
