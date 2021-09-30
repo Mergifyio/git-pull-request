@@ -19,10 +19,10 @@ class Repository:
     def __eq__(self, other):
         """
             one excate identical example as follows: 
-            >>> parse.urlparse("https://github.com/volcengine/volc-sdk-python.git")
-            ParseResult(scheme='https', netloc='github.com', path='/volcengine/volc-sdk-python.git', params='', query='', fragment='')
-            >>> parse.urlparse("git@github.com:volcengine/volc-sdk-python.git")
-            ParseResult(scheme='', netloc='', path='git@github.com:volcengine/volc-sdk-python.git', params='', query='', fragment='')
+            >>> parse.urlparse("https://github.com/user/repo.git")
+            ParseResult(scheme='https', netloc='github.com', path='/user/repo.git', params='', query='', fragment='')
+            >>> parse.urlparse("git@github.com:user/repo.git")
+            ParseResult(scheme='', netloc='', path='git@github.com:user/repo.git', params='', query='', fragment='')
             
             host: github.com
             user: volcengine
