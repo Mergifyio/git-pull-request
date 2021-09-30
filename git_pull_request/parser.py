@@ -26,73 +26,68 @@ from git_pull_request.github import Github
 @click.command("pull-request")
 @click.option("--debug", prompt=True, default=False, show_default=True,
     help="If true, enable debugging.")
-@click.option("--target-url" "-r", prompt=False,
+@click.option("--target-url" "-u", prompt=False,
     help="The remote url of branch to send a pull-request to. Default is auto-detected from .git/config. "
+    "Target-url should using http or ssh as protocol."
     "There options, target-url, target-remote and target-branch, only needed when you cloned from your repository, or you want "
     "to create a pull-request to another repository.\n" 
     "For example, you can check you target url by \"git config --get \"remote.origin.url\"\""
     )
 @click.option("--target-remote" "-r", prompt=False,
-    help="The remote name of the target branch to send a pull-request to. Default is auto-detected from .git/config. "
+    help="The remote name of the target repo to send a pull-request to. Default is auto-detected from .git/config. "
     "There options, target-url, target-remote and target-branch, only needed when you cloned from your repository, or you want "
     "to create a pull-request to another repository.\n"
     "As a example, target-remote of a cloned repository from other other people ususally is \"origin\"."
     )
 @click.option("--target-branch" "-b", prompt=False,
-    help="The local branch to send a pull-request to. Default current branch at local"
-    "There options, target-url, target-remote and target-branch, only needed when you cloned from your repository, or you want "
-    "to create a pull-request to another repository.\n"
+    help="The local branch to send a pull-request to. Default value is auto-detected from .git/config. "
+    "There options, target-url, target-remote and target-branch, usually needed when you cloned from your repository, or you want "
+    "to custom a pull-request.\n"
     )
-@click.option("--title", "-t",
+@click.option("--title",
     help="Title of the pull request.")
-@click.option("--message", "-m",
-    help="Message of the pull request.")
+@click.option("--body",
+    help="Body of the pull request.")
 @click.option(
-    "--comment", "-C", 
+    "--comment", 
     help="Comment to publish when updating the pull-request")
 @click.option(
-    "--plain-text",
-    help="For a existing pull-request, Don't open an editor to change the pull request message.",
+    "--keep-messsage",
+    help="For a existing pull-request, Don't open an editor to change the pull request body.",
     )
 @click.option(
     "--skip-editor",
     type=str,
     help="If not empty, use parameter of --title and --message instead of " 
     "opening edition for pull-requester content.")
-@click.option("--label", "-l",
+@click.option("--labels", "-l",
     help="The labels to add to the pull request. Can be used multiple times.")
 @click.option("--branch-prefix", prompt=True, default=True, show_default=True,
     help="Prefix of the remote branch")
-@click.option("--update", "-u", prompt=True, default=True, show_default=True,
-    help="If false, update local change with rebasing the remote branch. Default True.")
-@click.option("--user", prompt=True, type=str,
-    help="The username of github to log in, which will store in \"git credential\"")
-@click.option("--token", "-u", prompt=True, type=str,
+@click.option("--token", prompt=True, type=str,
     help="The personal token of github to log in, which will store in \"git credential\"."
     "If empty, we will promot in terminal to input corresponding infos.\n"
     "How to get you personal token? Please check this https://docs.github.com/en/authentication"
     "/keeping-your-account-and-data-secure/creating-a-personal-access-token")
 
-def main(debug, target_url, target_remote, target_branch, title, message, label, branch_prefix, update, comment, skip_editor, user, token):
+def main(debug, target_url, target_remote, target_branch, title, body, keep_message, labels, comment, skip_editor, token):
     if not debug:
         log_info()
     
     logger.level()
-    gh = Github(
+    Github(
         Git(),
         target_url=target_url,
         target_remote=target_remote,
         target_branch=target_branch,
         title=title,
-        message=message,
+        body=body,
         comment=comment,
-        update=update,
-        branch_prefix=branch_prefix,
-        labels=label,
+        keep_message=keep_message,
+        labels=labels,
         skip_editor=skip_editor,
-        user=user,
         token=token,
-        )
+        ).run()
 
 def log_info():
     logger.remove()

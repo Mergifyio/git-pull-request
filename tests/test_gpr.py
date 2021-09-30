@@ -173,7 +173,7 @@ class TestGitCommand(fixtures.TestWithFixtures):
             ["git", "commit", "--allow-empty", "--no-edit", "-q", "-m", "Import"]
         )
         gpr._run_shell_command(
-            ["git", "commit", "--allow-empty", "--no-edit", "-q", "-m", "First message"]
+            ["git", "commit", "--allow-empty", "--no-edit", "-q", "-m", "Firstbody"]
         )
         gpr._run_shell_command(
             [
@@ -183,12 +183,12 @@ class TestGitCommand(fixtures.TestWithFixtures):
                 "--no-edit",
                 "-q",
                 "-m",
-                "Last message\n\nLong body, " "but not so long\n",
+                "Lastbody\n\nLong body, " "but not so long\n",
             ]
         )
 
         self.assertEqual(
-            (1, "Last message", "Long body, but not so long"),
+            (1, "Lastbody", "Long body, but not so long"),
             gpr.git_get_title_and_message("master^", "master"),
         )
 
@@ -196,8 +196,8 @@ class TestGitCommand(fixtures.TestWithFixtures):
             (
                 2,
                 "Pull request for master",
-                "## First message\n\n\n"
-                "## Last message\n\nLong body, but not so long",
+                "## Firstbody\n\n\n"
+                "## Lastbody\n\nLong body, but not so long",
             ),
             gpr.git_get_title_and_message("master^^", "master"),
         )
@@ -230,7 +230,7 @@ class TestGithubPRTemplate(fixtures.TestWithFixtures):
             ["git", "commit", "--allow-empty", "--no-edit", "-q", "-m", "Import"]
         )
         gpr._run_shell_command(
-            ["git", "commit", "--allow-empty", "--no-edit", "-q", "-m", "First message"]
+            ["git", "commit", "--allow-empty", "--no-edit", "-q", "-m", "Firstbody"]
         )
         gpr._run_shell_command(
             [
@@ -240,7 +240,7 @@ class TestGithubPRTemplate(fixtures.TestWithFixtures):
                 "--no-edit",
                 "-q",
                 "-m",
-                "Last message\n\nLong body, " "but not so long\n",
+                "LastbodyLong body, " "but not so long\n",
             ]
         )
 
@@ -252,12 +252,12 @@ class TestGithubPRTemplate(fixtures.TestWithFixtures):
         self.assertEqual(
             (
                 1,
-                "Last message",
+                "Lastbody"
                 "# test\n"
                 "> ------------------------ >8 ------------------------\n"
                 "> Do not modify or remove the line above.\n"
                 "> Everything below it will be ignored.\n"
-                "## Last message\n\n"
+                "## Lastbody"
                 "Long body, but not so long",
             ),
             gpr.git_get_title_and_message("master^", "master"),
@@ -270,17 +270,14 @@ class TestGithubPRTemplate(fixtures.TestWithFixtures):
                 "> ------------------------ >8 ------------------------\n"
                 "> Do not modify or remove the line above.\n"
                 "> Everything below it will be ignored.\n"
-                "## First message\n\n\n"
-                "## Last message\n\n"
+                "## Firstbody\n\n\n"
+                "## Lastbody\n\n"
                 "Long body, but not so long",
             ),
             gpr.git_get_title_and_message("master^^", "master"),
         )
 
-        count, title, message = gpr.git_get_title_and_message(
-            "master^^",
-            "master",
-        )
+        count, title,body = gpr.git_get_title_and_message("master^^", "master",)
 
         assert gpr.parse_pr_message(message) == ("# test", "")
 

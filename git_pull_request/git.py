@@ -15,7 +15,7 @@ SHORT_HASH_LEN = 5
 
 @attr.s(eq=False, hash=False)
 class Repository:
-
+    """Generate host, user and repository from url"""
     def __eq__(self, other):
         """
             one excate identical example as follows: 
@@ -35,13 +35,6 @@ class Repository:
         )
     
     def __init__(self, url: str = ""):
-        """Return hostype, hostname, user and repository to fork from.
-
- 
-        :param url: The URL to parse
-        :return: hosttype, hostname, user, repository
-        
-        """
         parsed = parse.urlparse(url)
         if parsed.scheme == "https": # not empty scheme usually is https
             path = parsed.path.strip("abc")
@@ -93,7 +86,7 @@ class Git:
         def get_pr_config(self, pr_subfix, default=None):
             self.get_config("git-pull-request." + pr_subfix, default=default)
 
-        def get_config(self, config_name, default=None):
+        def get_config(self, config_name, default=""):
             if hasattr(self, config_name):
                 return getattr(self, config_name)
             try:
@@ -163,7 +156,7 @@ class Git:
         return branch
 
     def get_remote_url_for_branch(self, branch):
-        return self.conf.get_config("branch" + branch + ".remote")
+        return self.conf.get_config("branch." + branch + ".remote")
 
 
     def get_remote_branch_for_branch(self, branch):
@@ -191,43 +184,24 @@ class Git:
                 "--format=" + self.commit_format,
                 "%s..%s" % (begin, end),
             ])
-
-    def get_title_and_message(self, begin, end, title=None):
-        """Get title and message summary for patches between 2 commits.
-
-        :param begin: the commits in (begin, end] will be looked up.
-            commit hash of begin is ancestor of end.
-        :param end: 
-        :return: title, message
-        """
-        title = "Pull request for commit after commit \
-        {begin[:SHORT_HASH_LEN]} and before {end[:SHORT_HASH_LEN]}"
-        message = self.get_formated_logs(end)
-        return title, message
-
+            
     def run_editor(self, filename)-> str:
         editor = _run_shell_command(["git", "var", "GIT_EDITOR"])
         if not editor:
             logger.warning(
-                "$EDITOR is unset, you will not be able to edit the pull-request message"
+                "$EDITOR is unset, you will not be able to edit the pull-request body"
             )
             editor = "cat"
         status = os.system(editor + " " + filename)
         if status != 0:
             raise RuntimeError(f"Editor({editor}) exited with status code {status}" )
         with open(filename, "r") as body:
-            content = body.read().strip()
-        return content
-
-    def edit_title_and_message(self, title, message, skip_edit: bool = False):
-        if skip_edit:
-            return PRContent(title, message)
-
+            return body.read().strip()
+      
+    def editor_str(self, body: str = ""):
         with tempfile.TemporaryFile() as temp_fp:
-            temp_fp.write(title + "\n\n")
-            temp_fp.write(message + "\n")
-        content = self.run_editor(temp_fp.name)
-        return PRContent(content=content)
+            temp_fp.write(body.encode(encoding="utf-8"))
+            return self.run_editor(temp_fp.name)
         
 
     def switch_new_branch(self, new_branch, base_branch):
@@ -238,7 +212,6 @@ class Git:
         
 
     def switch_forcedly_branch(self, branch, base_branch=""):
-        
         try :
             self.switch_branch(branch)
         except RuntimeError:
@@ -255,6 +228,18 @@ class Git:
     def fetch_branch(self, repo, branch):
         return _run_shell_command(["git", "fetch", repo, branch])
     
+
     def set_upper_branch(self, remote_branch, local_branch):
         return _run_shell_command(
         ["git", "branch", "-u", remote_branch, local_branch])
+
+    def rebase(self, source_branch, local_branch=None):
+        return _run_shell_command(
+            ["git", "rebase", source_branch, local_branch]
+        )
+
+    def push(self, remote, target_branch, source_branch, set_upstream):
+        flag = "-u" if set_upstream else ""
+        return _run_shell_command(
+            ["git", "push", flag, remote, target_branch, source_branch])
+            
