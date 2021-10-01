@@ -1,5 +1,5 @@
 from click.core import F
-from git_pull_request.content import PRContent
+from git_auto_pull_request.content import PRContent
 
 import os
 import github 
@@ -8,9 +8,9 @@ from github.GithubException import GithubException, UnknownObjectException
 from github.PullRequest import PullRequest 
 from loguru import logger
 
-from git_pull_request.git import _run_shell_command
-from git_pull_request.git import Git, Repository
-from git_pull_request import utility
+from git_auto_pull_request.git import _run_shell_command
+from git_auto_pull_request.git import Git, Repository
+from git_auto_pull_request import utility
 
 
 class Github:
