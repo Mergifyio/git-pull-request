@@ -174,7 +174,7 @@ class Github:
             pr = pulls[0]
             if len(pulls) > 1:
                 logger.info(f"Pull-request({pulls[1:]}) has been ignored.")
-            self.send_pr_info(pr)
+            self.generate_pr_info(pr)
 
     def create_pr(self):
         try:
@@ -206,7 +206,7 @@ class Github:
         self.content.reset_empty(PRContent(pr.title, pr.body))
        
         if not self.keep_message:
-            self.reset_content()
+            self.fill_content()
             pr.edit(title=self.content.title, body=self.content.body)
             logger.debug("Updated pull-request title and body")
             
