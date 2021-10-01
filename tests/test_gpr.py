@@ -19,7 +19,7 @@ import attr
 import fixtures
 import github
 
-import git_pull_request as gpr
+import git_auto_pull_request as gpr
 
 
 class TestRunShellCommand(unittest.TestCase):

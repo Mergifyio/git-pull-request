@@ -7,7 +7,7 @@ import attr
 import tempfile
 from urllib import parse
 from loguru import logger
-from git_pull_request.content import PRContent
+from git_auto_pull_request.content import PRContent
 
 
 

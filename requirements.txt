@@ -1,3 +1,4 @@
-loguru
-types_attrs=19.1.0
-attr
+loguru==0.5.3
+click==8.0.1å
+attrs==21.2.0
+pygithub==1.55

@@ -18,8 +18,8 @@ import sys
 import click
 from loguru import logger
 
-from git_pull_request.git import Git
-from git_pull_request.github import Github
+from git_auto_pull_request.git import Git
+from git_auto_pull_request.github import Github
 
 
 # Creates a GitHub pull-request.
