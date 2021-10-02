@@ -12,7 +12,7 @@
 # implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from git_auto_pull_request import textparse
+from auto_pull_request import textparse
 
 
 def test_ignore_marker():

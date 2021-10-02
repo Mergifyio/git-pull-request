@@ -18,28 +18,27 @@ import sys
 import click
 from loguru import logger
 
-from git_auto_pull_request.git import Git
-from git_auto_pull_request.github import Github
+from auto_pull_request.pull_request import Auto
 
 
 # Creates a GitHub pull-request.
 @click.command("pull-request")
-@click.option("--debug", prompt=True, default=False, show_default=True,
+@click.option("--debug/--no-debug", default=False, show_default=True,
     help="If true, enable debugging.")
-@click.option("--target-url" "-u", prompt=False,
+@click.option("--target-url", "-u",
     help="The remote url of branch to send a pull-request to. Default is auto-detected from .git/config. "
     "Target-url should using http or ssh as protocol."
     "There options, target-url, target-remote and target-branch, only needed when you cloned from your repository, or you want "
     "to create a pull-request to another repository.\n" 
     "For example, you can check you target url by \"git config --get \"remote.origin.url\"\""
     )
-@click.option("--target-remote" "-r", prompt=False,
+@click.option("--target-remote", "-r",
     help="The remote name of the target repo to send a pull-request to. Default is auto-detected from .git/config. "
     "There options, target-url, target-remote and target-branch, only needed when you cloned from your repository, or you want "
     "to create a pull-request to another repository.\n"
     "As a example, target-remote of a cloned repository from other other people ususally is \"origin\"."
     )
-@click.option("--target-branch" "-b", prompt=False,
+@click.option("--target-branch", "-b",
     help="The local branch to send a pull-request to. Default value is auto-detected from .git/config. "
     "There options, target-url, target-remote and target-branch, usually needed when you cloned from your repository, or you want "
     "to custom a pull-request.\n"
@@ -52,7 +51,7 @@ from git_auto_pull_request.github import Github
     "--comment", 
     help="Comment to publish when updating the pull-request")
 @click.option(
-    "--keep-messsage",
+    "--keep-message",
     help="For a existing pull-request, Don't open an editor to change the pull request body.",
     )
 @click.option(
@@ -62,21 +61,14 @@ from git_auto_pull_request.github import Github
     "opening edition for pull-requester content.")
 @click.option("--labels", "-l",
     help="The labels to add to the pull request. Can be used multiple times.")
-@click.option("--branch-prefix", prompt=True, default=True, show_default=True,
-    help="Prefix of the remote branch")
 @click.option("--token", prompt=True, type=str,
     help="The personal token of github to log in, which will store in \"git credential\"."
     "If empty, we will promot in terminal to input corresponding infos.\n"
     "How to get you personal token? Please check this https://docs.github.com/en/authentication"
     "/keeping-your-account-and-data-secure/creating-a-personal-access-token")
-
 def main(debug, target_url, target_remote, target_branch, title, body, keep_message, labels, comment, skip_editor, token):
-    if not debug:
-        log_info()
-    
-    logger.level()
-    Github(
-        Git(),
+    log_info(debug)
+    Auto(
         target_url=target_url,
         target_remote=target_remote,
         target_branch=target_branch,
@@ -89,6 +81,9 @@ def main(debug, target_url, target_remote, target_branch, title, body, keep_mess
         token=token,
         ).run()
 
-def log_info():
+def log_info(debug):
     logger.remove()
-    logger.add(sys.stderr, level="INFO")
+    
+    level = "DEBUG" if debug else "SUCCESS"
+    logger.add(sys.stderr, level=level)
+    
