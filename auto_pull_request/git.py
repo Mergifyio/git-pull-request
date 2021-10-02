@@ -210,3 +210,15 @@ class Git:
         return _run_shell_command(
             ["git", "push", flag, remote, f"{source_branch}:{target_branch}"])
             
+    def clear_status(self) -> bool:
+        """check the work tree wether clean
+        Please run it at project root.
+        """
+        try:
+            if not _run_shell_command(["git", "diff", "--merge-base", "head", "--", "."])\
+            and not _run_shell_command(["git", "diff", "--", "."]):
+                return True
+        except:
+            return False
+        return False
+    

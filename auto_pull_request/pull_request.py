@@ -83,18 +83,22 @@ class Remote:
     @classmethod
     def create_from_git(self):
         pass
-
+ 
     def pull(self):
+        if not self.git.clear_status():
+            logger.error("Please commit local changes firstly")
+            dead_for_resource()
+            
         self.git.fetch_branch(self.remote_name, self.local_branch)
         try:
             self.git.rebase(self.remote_branch, self.local_branch)
         except RuntimeError:
             logger.error(
                 f"During the rebasing {self.local_branch} from {self.remote_branch}, "
-                "it is likely that your change has a merge conflict.\n"
-                "You may resolve it by `git add . ;git rebase --continue` command."
-                "Once done run `git pull-request' again.\n\n"
-                "If you want to abort conflict resolution, run `git rebase --abort'.\n"
+                "it is likely that your change has a merge conflict. "
+                "You may resolve it by `git add . ;git rebase --continue` command. "
+                "Once done run `git pull-request' again. "
+                "If you want to abort conflict resolution, run `git rebase --abort'."
             )
             dead_for_resource()
 
