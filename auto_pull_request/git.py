@@ -23,6 +23,7 @@ def _run_shell_command(cmd: list[str], input: str ="", raise_on_error: bool=True
         logger.debug(f"{cmd} is killed because of TIMEOUTERROR")
         out, _ = sub.communicate(input=input, timeout=30)
     if raise_on_error and sub.returncode:
+        logger.error(f"The output of running command: {out}")
         raise RuntimeError("%s returned %d" % (cmd, sub.returncode))
     logger.debug(f"output of {cmd}: {out.strip()}")
     return out.strip()
