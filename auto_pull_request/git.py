@@ -10,9 +10,9 @@ from loguru import logger
 SHORT_HASH_LEN = 5
 
 
-def _run_shell_command(cmd: list[str], input: str =None, raise_on_error: bool=True) -> str:
+def _run_shell_command(cmd: list[str], input: str ="", raise_on_error: bool=True) -> str:
     logger.debug(f"running '{cmd}' with input of '{input}'")
-    
+    assert type(input) == str, "type of input should be str"
     output = subprocess.PIPE
     sub = subprocess.Popen(cmd, stdin=subprocess.PIPE, 
         stdout=output, stderr=output, encoding="utf-8")
@@ -66,10 +66,10 @@ class Git:
             
     def get_login_password(self):
         """Get login/password from git credential."""
-        if self.username and self.password:
-            return self.username, self.password
+        if  self.password:
+            return self.password
 
-        request = "protocol={}\nhost={}\n".format(self.protocol, self.host).encode()
+        request = "protocol={}\nhost={}\n".format(self.protocol, self.host)
 
         out = _run_shell_command(["git", "credential", "fill"], input=request)
         for line in out.split("\n"):
@@ -84,7 +84,7 @@ class Git:
     def approve_login_password(self, user, password, host="github.com", protocol="https"):
         """Tell git to approve the credential."""
         request = f"protocol={protocol}\nhost={host}\nusername={user}\npassword={password}\n"
-        output = _run_shell_command(request)
+        output = _run_shell_command(["git", "credential", "approve"], input=request)
         logger.info(f"git credential status:{output}")
 
     def get_matching_remote(self, wanted_url):
