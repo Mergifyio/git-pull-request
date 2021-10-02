@@ -83,7 +83,6 @@ def main(debug, target_url, target_remote, target_branch, title, body, keep_mess
 
 def log_info(debug):
     logger.remove()
-    
     level = "DEBUG" if debug else "SUCCESS"
     logger.add(sys.stderr, level=level)
     

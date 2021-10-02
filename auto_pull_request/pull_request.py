@@ -1,4 +1,4 @@
-from click.core import F
+
 from auto_pull_request.content import PRContent
 
 import os
@@ -54,7 +54,7 @@ class RepositoryID:
         )
     
     def https_url(self):
-        return "/".join("https:/", self.host, self.user, self.repo + ".git")
+        return "/".join(["https:/", self.host, self.user, self.repo + ".git"])
 
 class Remote:
     """the object control github repo, corresponding local git remote config
@@ -70,9 +70,10 @@ class Remote:
         self.repo_branch = repo_branch
         self.local_branch = local_branch
         # TODO0 set the value int git.config
+    
     @property
     def remote_branch(self):
-        return "/".join(self.remote_name, self.repo_branch)
+        return "/".join([self.remote_name, self.repo_branch])
 
     #todo set move ?
     def set_into_git(self):
@@ -80,7 +81,7 @@ class Remote:
         
     #todo  create instance from more data?
     @classmethod
-    def create_from_git():
+    def create_from_git(self):
         pass
 
     def pull(self):
@@ -129,11 +130,9 @@ class Auto:
         self.labels = labels
         self.skip_editor = skip_editor
         self.token = token
-        self.targe_url = target_url
+        self.target_url = target_url
         self.target_remote_name = target_remote
         self.target_branch = target_branch
-        self.target_repo_id =RepositoryID(self.target_url)
-        self.host = self.target_repo_id.host
         self.user = ""
 
         self._init_basic_info()
@@ -172,18 +171,20 @@ class Auto:
         check_true_value_and_logger(self.target_remote_name, "Unable find remote value", os.EX_UNAVAILABLE)
         check_true_value_and_logger(self.target_url, "Unable find remote url", os.EX_UNAVAILABLE)
         
+        self.target_repo_id =RepositoryID(self.target_url)
+        self.host = self.target_repo_id.host
+
         logger.info(f"Basic Info: Remote: {self.target_remote_name} Remote URL: {self.target_url}. "
              + f"Remote branch: {self.target_branch} Local Branch: {self.local_branch}")
         
 
     def _init_credential(self):
-        if not self.user or not self.token:
-            self.user, self.token = self.git.get_login_password()
-        check_true_value_and_logger(self.user, f"Unable to find your user of {self.git.host}. "
-            "Make sure you have a git credential working.", os.EX_UNAVAILABLE)
+    
+        if not self.token:
+            self.token = self.git.get_login_password()
         check_true_value_and_logger(self.token, f"Unable to find your token of {self.git.host}. "
             "Make sure you have a git credential working.", os.EX_UNAVAILABLE)
-        self.git.approve_login_password(host=self.host, user=self.user, password=self.token)
+        self.git.approve_login_password(host=self.host, user=self.user, password=self.token) #TODO hide debug info of the token
         
         logger.info(f"Found user: {self.user} password: <redacted> in host {self.git.host}")
 
@@ -312,11 +313,11 @@ class Auto:
             pr.add_to_labels(*self.labels)
             logger.debug(f"Pull-request {pr.number} added labels %s", self.labels)
 
-
+    @staticmethod
     def _format_github_exception(action:str , e: GithubException):
         url = e.data.get("documentation_url", "GitHub documentation")
         errors_msg = "\n".join(
-            error.get("message", "") for error in e.data.get("errors", [])
+            error.get("message", "") for error in e.data.get("errors", {}) # type: ignore
         )
         return (
             "Unable to %s: %s (%s)\n"
