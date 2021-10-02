@@ -1,56 +1,17 @@
 
-import distutils.util
 import os
 import re
 import subprocess
-import attr
 import tempfile
-from urllib import parse
-from loguru import logger
-from git_auto_pull_request.content import PRContent
 
+from loguru import logger
 
 
 SHORT_HASH_LEN = 5
 
-@attr.s(eq=False, hash=False)
-class Repository:
-    """Generate host, user and repository from url"""
-    def __eq__(self, other):
-        """
-            one excate identical example as follows: 
-            >>> parse.urlparse("https://github.com/user/repo.git")
-            ParseResult(scheme='https', netloc='github.com', path='/user/repo.git', params='', query='', fragment='')
-            >>> parse.urlparse("git@github.com:user/repo.git")
-            ParseResult(scheme='', netloc='', path='git@github.com:user/repo.git', params='', query='', fragment='')
-            
-            host: github.com
-            user: volcengine
-            repo: volc-sdk-python.git
-        """
-        return (
-            self.host.lower() == other.host.lower()
-            and self.user.lower() == other.user.lower()
-            and self.repo.lower() == other.repo.lower()
-        )
-    
-    def __init__(self, url: str = ""):
-        parsed = parse.urlparse(url)
-        if parsed.scheme == "https": # not empty scheme usually is https
-            path = parsed.path.strip("abc")
-            self.host = parsed.netloc
-        elif not parsed.scheme and "@" in parsed.path: # we assume that the url is the form of ssh 
-            ssh, _, path = parsed.path.partition(':')
-            _, _, self.host = ssh.partition("@")
-        else:
-           raise ValueError("Unsupported scheme {pared.scheme}")
-        self.user, self.repo = path.split("/", 1)
-        if self.repo.endswith(".git"):
-            self.repo = self.repo[:-4]
-
 
 def _run_shell_command(cmd: list[str], input: str =None, raise_on_error: bool=True) -> str:
-    logger.debug("running %s", cmd)
+    logger.debug(f"running '{cmd}' with input of '{input}'")
     
     output = subprocess.PIPE
     sub = subprocess.Popen(cmd, stdin=subprocess.PIPE, 
@@ -66,14 +27,14 @@ def _run_shell_command(cmd: list[str], input: str =None, raise_on_error: bool=Tr
     logger.debug(f"output of {cmd}: {out.strip()}")
     return out.strip()
 
-
+    
 class Git: 
     
-    def __init__(self):
+    def __init__(self, protocol:str="https", host:str="github.com"):
         self.username = None
         self.password = None
-        self.protocol = "https"
-        self.host = "github.com"
+        self.protocol = protocol
+        self.host = host
 
         self.conf = self.git_conf()
         self.commit_format = {
@@ -134,7 +95,7 @@ class Git:
             name, remote_url, push_pull = re.split(r"\s", remote)
             if push_pull != "(push)":
                 continue
-            remote_id = self.repository_id_from_url(remote_url)
+            remote_id = self.fork_repository_id_from_url(remote_url)
             if wanted_id == remote_id:
                 return name
 
@@ -221,9 +182,12 @@ class Git:
         else:
             raise RuntimeError(f"Unable create new branch {branch} from branch {base_branch}")
     
-    def add_remote_ulr(self, remote_branch, url):
-        return  _run_shell_command(
-            ["git", "remote", "add", remote_branch, url])
+    def add_remote_ulr(self, remote, url):
+        try:
+            _run_shell_command(["git", "remote", "add", remote, url])
+        except RuntimeError as e:
+            url = _run_shell_command(["git", "remote", "get-url", remote])
+            logger.info(f"The config has been add. The the url of {remote} remote is {url}. Exception:{e}")
     
     def fetch_branch(self, repo, branch):
         return _run_shell_command(["git", "fetch", repo, branch])
@@ -233,13 +197,15 @@ class Git:
         return _run_shell_command(
         ["git", "branch", "-u", remote_branch, local_branch])
 
-    def rebase(self, source_branch, local_branch=None):
+    def rebase(self, upstream=None, branch=None):
+        if not upstream and branch:
+            raise ValueError("If branch isn't empty, fill upstream firstly.") 
         return _run_shell_command(
-            ["git", "rebase", source_branch, local_branch]
+            ["git", "rebase", upstream, branch]
         )
-
-    def push(self, remote, target_branch, source_branch, set_upstream):
+        
+    def push(self, remote, source_branch, target_branch, set_upstream=False):
         flag = "-u" if set_upstream else ""
         return _run_shell_command(
-            ["git", "push", flag, remote, target_branch, source_branch])
+            ["git", "push", flag, remote, f"{source_branch}:{target_branch}"])
             

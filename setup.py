@@ -10,15 +10,17 @@ setup_requires = [
 ]
 
 setuptools.setup(
-    name = "git_auto_pull_request",
+    version='0.1.0',
     setup_requires= setup_requires,
     use_scm_version=True,
-    py_modules=['git_auto_pull_request'],
+    author="Ove",
+    packages=['auto_pull_request'],
     entry_points={
     'console_scripts': [
-        'parser.py = git_auto_pull_request.parser:main',
+        'auto-pull-request=auto_pull_request.parser:main',
     ],
     },
+    # scripts=['auto_pull_request/parser.py'],
     classifiers =[
             "Programming Language :: Python :: 3",
             "License :: OSI Approved :: MIT License",

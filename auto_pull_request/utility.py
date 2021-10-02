@@ -15,7 +15,7 @@ def check_and_logger(value, msg:str="", exit_code=None, *error_values):
         if checked == value:
             logger.critical(msg + "value:{value}")
             if exit_code: 
-                dead_for_resource
+                dead_for_resource()
             else:
                 return
 
@@ -26,3 +26,6 @@ def zero_value(value):
 
 def dead_for_resource():
     exit(os.EX_UNAVAILABLE)
+
+def dead_for_software():
+    exit(os.EX_SOFTWARE)
