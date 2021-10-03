@@ -12,7 +12,7 @@ from urllib import parse
 
 from auto_pull_request.utility import dead_for_resource, dead_for_software, check_true_value_and_logger, format_github_exception
 from auto_pull_request.git import Git 
-
+from setuptools_scm import get_version
 
 class RepositoryID:
     """Generate host, user and repository name from url"""
@@ -168,6 +168,7 @@ class Auto:
         labels=None,
         skip_editor="",
         token=""):
+        self.log_version()
         self.git = Git()
         self.content = PRContent(title, body)
         self.keep_message = keep_message
@@ -357,3 +358,6 @@ class Auto:
             logger.debug(f"Pull-request {pr.number} added labels %s", self.labels)
 
         logger.success(f"Updated pull-request: {pr.html_url}")
+
+    def log_version(self):
+        logger.info(f"Auto-Pull-Request 🌟version:{get_version()}")
