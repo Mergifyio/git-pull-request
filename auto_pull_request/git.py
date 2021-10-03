@@ -4,6 +4,7 @@ import re
 import subprocess
 import tempfile
 
+
 from loguru import logger
 
 
@@ -11,7 +12,9 @@ SHORT_HASH_LEN = 5
 
 
 def _run_shell_command(cmd: list[str], input: str ="", raise_on_error: bool=True) -> str:
-    logger.debug(f"running '{cmd}' with input of '{input}'")
+    new_cmd = filter((lambda x: x), cmd)
+    
+    logger.debug(f"running '{new_cmd}' with input of '{input}'")
     assert type(input) == str, "type of input should be str"
     output = subprocess.PIPE
     sub = subprocess.Popen(cmd, stdin=subprocess.PIPE, 
@@ -164,7 +167,7 @@ class Git:
     def editor_str(self, text: str = ""):
         with tempfile.NamedTemporaryFile() as temp_fp:
             temp_fp.write(text.encode(encoding="utf-8"))
-            os.system(f"cat {temp_fp.name}")
+            _run_shell_command(cmd=["cat",temp_fp.name])
             return self.run_editor(temp_fp.name)
         
 
@@ -210,7 +213,7 @@ class Git:
     def push(self, remote, source_branch, target_branch, set_upstream=False, ignore_error=False):
         flag = "-u" if set_upstream else ""
         return _run_shell_command(
-            ["git", "push", flag, remote, f"{source_branch}:{target_branch}"], raise_on_error=False)
+            ["git", "push", flag, remote, f"{source_branch}:{target_branch}"], raise_on_error=ignore_error)
             
     def clear_status(self) -> bool:
         """check the work tree wether clean

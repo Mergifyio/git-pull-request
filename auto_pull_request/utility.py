@@ -28,7 +28,7 @@ def format_github_exception(action:str , e: GithubException):
         json.dumps(error) for error in e.data.get("errors", {}) # type: ignore
     )
     return f"Unable to {action}: {e.data.get('message')} ({e.status}). Errors: {errors_msg}. \
-            Check {url} for more information.{e}"
+            Check {url} for more information."
 
 def zero_value(value):
     if value != None:

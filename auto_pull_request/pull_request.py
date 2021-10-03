@@ -117,7 +117,7 @@ class Remote:
 
     def push(self, ignore_error=False):
         self.clear_local()
-        self.git.push(self.remote_name, self.local_branch, self.remote_branch, ignore_error=ignore_error)
+        self.git.push(self.remote_name, self.local_branch, self.repo_branch, ignore_error=ignore_error)
 
     def create_pr(self, fork_head_branch, content:PRContent):
         try:
