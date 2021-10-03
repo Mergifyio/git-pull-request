@@ -5,6 +5,7 @@ import subprocess
 import tempfile
 
 from subprocess import TimeoutExpired
+from auto_pull_request.utility import quoted_str
 from loguru import logger
 
 
@@ -132,11 +133,11 @@ class Git:
         return self.conf.get_config("branch." + branch + ".remote")
 
     def get_commit_body(self, commit):
-        return _run_shell_command(["git", "show", "--format=%b", commit, "--"])
+        return _run_shell_command(["git", "show", "--format=%b" , commit, "--"])
 
     def get_commit_titles(self, begin, end, format):
         return _run_shell_command(
-            ["git", "log", "--no-merges", f"--format=\"{format}\"", f"{begin}..{end}"])
+            ["git", "log", "--no-merges", f"--format="+quoted_str(format), f"{begin}..{end}"])
 
     def get_formated_logs(self, begin, end):
         return _run_shell_command(
@@ -144,7 +145,7 @@ class Git:
                 "git",
                 "log",
                 "--no-merges",
-                "--format=" + self.commit_format["log"],
+                "--format=" + quoted_str(self.commit_format["log"]),
                 f"{begin}..{end}",
             ])
             

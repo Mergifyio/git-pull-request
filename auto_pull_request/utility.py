@@ -40,3 +40,6 @@ def dead_for_resource():
 
 def dead_for_software():
     exit(os.EX_SOFTWARE)
+
+def quoted_str(text:str):
+    return "\"" + text + "\""
