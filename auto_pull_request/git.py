@@ -82,11 +82,12 @@ class Git:
             if self.username and self.password:
                 return self.username, self.password
 
-    def approve_login_password(self, user, password, host="github.com", protocol="https"):
+    def approve_login_password(self, user="", password="", host="github.com", protocol="https"):
         """Tell git to approve the credential."""
         request = f"protocol={protocol}\nhost={host}\nusername={user}\npassword={password}\n"
         output = _run_shell_command(["git", "credential", "approve"], input=request)
         logger.info(f"git credential status:{output}")
+
 
     def get_matching_remote(self, wanted_url):
         wanted_id = self.get_repository_id_from_url(wanted_url)

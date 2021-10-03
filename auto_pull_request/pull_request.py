@@ -35,7 +35,7 @@ class RepositoryID:
             logger.error(f"This url has a empty entity. user: {self.user}, repo:{self.repo}, host:{self.host}")
             dead_for_software()
             
-    def __eq__(self, other):
+    def __eq__(self, other:object):
         """
             one excate identical example as follows: 
             >>> parse.urlparse("https://github.com/user/repo.git")
@@ -47,10 +47,12 @@ class RepositoryID:
             user: volcengine
             repo: volc-sdk-python
         """
+        if not isinstance(other, RepositoryID):
+            return False
         return (
             self.host.lower() == other.host.lower()
             and self.user.lower() == other.user.lower()
-            and self.fork_repo.lower() == other.repo.lower()
+            and self.repo.lower() == other.repo.lower()
         )
     
     def https_url(self):
@@ -140,8 +142,8 @@ class Auto:
         self.user = ""
 
         self._init_basic_info()
-        self._init_credential()
         self._init_github()
+        self._init_credential()
 
         self.target_remote = Remote(
             git = self.git,
@@ -157,7 +159,7 @@ class Auto:
             local_branch= self.local_branch
         )
         if self.fork_remote.repo == self.target_remote.repo:
-            logger.error(f"Detect the remote target repo is the forked repository, which is {self.fork_repo}. Please assigned --target-remote, --target-url with options.")
+            logger.error(f"Detect the remote target repo is the forked repository, which is {self.fork_remote.remote_url}. Please assigned --target-remote, --target-url with options.")
             dead_for_resource()
         logger.success("The Initialization completed-_^")
         
@@ -183,13 +185,12 @@ class Auto:
         
 
     def _init_credential(self):
-    
         if not self.token:
             self.token = self.git.get_login_password()
-        check_true_value_and_logger(self.token, f"Unable to find your token of {self.git.host}. "
-            "Make sure you have a git credential working.", os.EX_UNAVAILABLE)
-        self.git.approve_login_password(host=self.host, user=self.user, password=self.token) #TODO hide debug info of the token
-        
+            check_true_value_and_logger(self.token, f"Unable to find your token of {self.git.host}. "
+                "Make sure you have a git credential working.", os.EX_UNAVAILABLE)
+        else:
+            self.git.approve_login_password(host=self.host, user=self.user, password=self.token) #TODO hide debug info of the token
         logger.info(f"Found user: {self.user} password: <redacted> in host {self.git.host}")
 
     def _init_github(self):
@@ -258,11 +259,11 @@ class Auto:
         logger.info("Done~ ^_^")
 
     def update(self):
+        self.fork_remote.push()
         self.target_remote.pull()
         self.fork_remote.pull()
 
     def sync(self):
-        self.fork_remote.push()
         self.push_pr()
 
     def push_pr(self):
@@ -329,3 +330,7 @@ class Auto:
             "Check %s for more information."
             % (action, e.data.get("message"), e.status, errors_msg, url)
         )
+
+    def exist_remote_branch():
+        pass
+        # git ls-remote --exit-code --heads git@github.com:user/repo.git branch-name
