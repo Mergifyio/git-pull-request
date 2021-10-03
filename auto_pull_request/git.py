@@ -144,7 +144,7 @@ class Git:
                 "git",
                 "log",
                 "--no-merges",
-                "--format=" + self.commit_format,
+                "--format=" + self.commit_format["log"],
                 "%s..%s" % (begin, end),
             ])
             
