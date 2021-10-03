@@ -276,7 +276,7 @@ class Auto:
         self.target_remote.pull()
         self.fork_remote.pull()
         self.fork_remote.push(ignore_error=True)
-        
+
     def sync(self):
         self.push_pr()
 
@@ -345,6 +345,6 @@ class Auto:
             % (action, e.data.get("message"), e.status, errors_msg, url)
         )
 
-    def exist_remote_branch():
+    def exist_remote_branch(self):
         pass
         # git ls-remote --exit-code --heads git@github.com:user/repo.git branch-name
