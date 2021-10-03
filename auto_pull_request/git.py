@@ -149,7 +149,6 @@ class Git:
             ])
             
     def run_editor(self, filename:str)-> str:
-        logger.error(filename)
         editor = _run_shell_command(["git", "var", "GIT_EDITOR"])
         if not editor:
             logger.warning(
