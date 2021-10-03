@@ -64,6 +64,7 @@ class Remote:
 
         self.remote_branch is the local remote branch syncing with remote repository. Such as, "origin/master". 
         self.repo_branch: The branch on remote branch, which is pull-requested.
+        self.namebranch: the cross-repository branch name.
     """
     def __init__(self, git:Git, repo:RepositoryID, remote_name:str, repo_branch:str, local_branch:str, gh_repo:Repository):
         self.git = git
@@ -82,7 +83,7 @@ class Remote:
 
     @property
     def namehead(self):
-        return self.repo.repo + ":" + self.repo_branch
+        return self.user + ":" + self.repo_branch
 
     #todo set move ?
     def set_into_git(self):
@@ -96,7 +97,7 @@ class Remote:
     def exist_repo_branches(self, branch):
         self.branches = [branch.name for branch in self.gh_repo.get_branches()]
         logger.debug(f"The repo {self.user}:{self.repo.repo} has branches {self.branches}. "
-            f"And branch {branch}" + (" isn't" if branch not in self.branches else "is") + " in remote repo.")
+            f"And branch {branch}" + (" isn't" if branch not in self.branches else "is") + " in the remote repo.")
         return branch in self.branches
 
     def clear_local(self):
@@ -125,6 +126,9 @@ class Remote:
     def push(self, ignore_error=False):
         self.clear_local()
         self.git.push(self.remote_name, self.local_branch, self.repo_branch, ignore_error=ignore_error)
+        if not self.exist_repo_branches(self.repo_branch):
+            logger.error(f"Unable to Push {self.local_branch} to {self.remote_branch}. "
+            f"Please run `git push {self.remote_name} {self.local_branch}  {self.repo_branch}`in command line. ")
 
     def create_pr(self, fork_head_branch, content:PRContent):
         try:
@@ -135,7 +139,7 @@ class Remote:
         except github.GithubException as e:
             logger.error(format_github_exception("create pull request", e))
             dead_for_resource()
-        logger.info("Pull-request created: %s", self.pr.html)
+        logger.info("Pull-request created: %s", self.pr.html_url)
         return self.pr
 
 
