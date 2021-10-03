@@ -33,7 +33,7 @@ class RepositoryID:
 
         if not self.user or not self.repo or not self.host:
             logger.error(f"This url has a empty entity. user: {self.user}, repo:{self.repo}, host:{self.host}")
-            dead_for_software()
+            dead_for_software() 
             
     def __eq__(self, other:object):
         """
@@ -91,15 +91,16 @@ class Remote:
         self.branches = self.gh_repo.get_branches()
         return branch in self.branches
 
- 
-    def pull(self):
-        if not self.exist_repo_branches(self.repo_branch):
-            return
-
+    def clear_local(self):
         if not self.git.clear_status():
             logger.error("Please commit local changes firstly")
             dead_for_resource()
-            
+
+    def pull(self):
+        self.clear_local()
+        if not self.exist_repo_branches(self.repo_branch):
+            return
+
         self.git.fetch_branch(self.remote_name, self.local_branch)
         try:
             self.git.rebase(self.remote_branch, self.local_branch)
@@ -114,9 +115,7 @@ class Remote:
             dead_for_resource()
 
     def push(self, ignore_error=False):
-        if self.exist_repo_branches(self.repo_branch):
-            self.pull()
-            
+        self.clear_local()
         self.git.push(self.remote_name, self.local_branch, self.remote_branch, ignore_error=ignore_error)
     
 class Auto:
@@ -274,15 +273,15 @@ class Auto:
         logger.info("Done~ ^_^")
 
     def update(self):
-        self.fork_remote.push(ignore_error=True)
         self.target_remote.pull()
         self.fork_remote.pull()
-
+        self.fork_remote.push(ignore_error=True)
+        
     def sync(self):
         self.push_pr()
 
     def push_pr(self):
-        self.reset_content()
+        self.fill_content()
         pulls = list(self.gh_target_repo.get_pulls(base=self.target_remote.repo_branch, head=self.target_remote.local_branch))
         if not pulls:
             pr = self.create_pr()
