@@ -1,8 +1,10 @@
 
 import operator
 import os
+import json
 from loguru import logger
 
+from github import GithubException
 
 def split_and_remove_empty_lines(s):
     return filter(operator.truth, s.split("\n"))
@@ -18,6 +20,15 @@ def check_and_logger(value, msg:str="", exit_code=None, *error_values):
                 dead_for_resource()
             else:
                 return
+
+
+def format_github_exception(action:str , e: GithubException):
+    url = e.data.get("documentation_url", "GitHub documentation")
+    errors_msg = "; ".join(
+        json.dumps(error) for error in e.data.get("errors", {}) # type: ignore
+    )
+    return f"Unable to {action}: {e.data.get('message')} ({e.status}). Errors: {errors_msg}. \
+            Check {url} for more information."
 
 def zero_value(value):
     if value != None:

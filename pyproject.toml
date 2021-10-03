@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "auto-pull-request"
+version = "7.0.0"
+description = ""
+authors = ["ruth-seven <1098057570@qq.com>"]
+
+
+[tool.poetry.dependencies]
+python = "^3.6"
+loguru = "^0.5.3"
+click = "^8.0.1"
+attrs = "^21.2.0"
+PyGithub = "^1.55"
+setuptools-scm = "^6.3.2"
+
+[tool.poetry.dev-dependencies]
+
+[tool.poetry.scripts]
+auto_pull_request = 'auto_pull_request.parser:main'
+
+[tool.setuptools_scm]
+write_to = "auto_pull_request/parser.py"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

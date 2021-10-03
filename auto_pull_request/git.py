@@ -4,28 +4,29 @@ import re
 import subprocess
 import tempfile
 
+from subprocess import TimeoutExpired
 from loguru import logger
 
 
 SHORT_HASH_LEN = 5
-
+TIMEOUT_SECOND = 30
 
 def _run_shell_command(cmd: list[str], input: str ="", raise_on_error: bool=True) -> str:
-    logger.debug(f"running '{cmd}' with input of '{input}'")
+    new_cmd = list(filter((lambda x: x), cmd))
+    
+    logger.debug(f"running '{new_cmd}' with input of '{input}'")
     assert type(input) == str, "type of input should be str"
-    output = subprocess.PIPE
-    sub = subprocess.Popen(cmd, stdin=subprocess.PIPE, 
-        stdout=output, stderr=output, encoding="utf-8")
+    out = ""
     try:
-        out, _ = sub.communicate(input=input, timeout=30)
-    except TimeoutError:
-        sub.kill()
+        complete = subprocess.run(cmd, input=input, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding="utf-8")
+        out = complete.stdout
+    except TimeoutExpired:
         logger.debug(f"{cmd} is killed because of TIMEOUTERROR")
-        out, _ = sub.communicate(input=input, timeout=30)
-    if raise_on_error and sub.returncode:
+        raise TimeoutError
+    if raise_on_error and complete.returncode:
         logger.error(f"The output of running command: {out}")
-        raise RuntimeError("%s returned %d" % (cmd, sub.returncode))
-    logger.debug(f"returned code of {cmd}: {sub.returncode}; output of that: {out.strip()}")
+        raise RuntimeError("%s returned %d" % (cmd, complete.returncode))
+    logger.debug(f"returned code of {cmd}: {complete.returncode}; output of that: {out}")
     return out.strip()
 
     
@@ -145,10 +146,10 @@ class Git:
                 "log",
                 "--no-merges",
                 "--format=" + self.commit_format["log"],
-                "%s..%s" % (begin, end),
+                f"{begin}..{end}",
             ])
             
-    def run_editor(self, filename)-> str:
+    def run_editor(self, filename:str)-> str:
         editor = _run_shell_command(["git", "var", "GIT_EDITOR"])
         if not editor:
             logger.warning(
@@ -161,10 +162,13 @@ class Git:
         with open(filename, "r") as body:
             return body.read().strip()
       
-    def editor_str(self, body: str = ""):
-        with tempfile.TemporaryFile() as temp_fp:
-            temp_fp.write(body.encode(encoding="utf-8"))
-            return self.run_editor(temp_fp.name)
+    def editor_str(self, text: str = ""):
+        with tempfile.NamedTemporaryFile() as temp_fp:
+            temp_fp.write(text.encode(encoding="utf-8"))
+            temp_fp.seek(0)
+            _run_shell_command(cmd=["cat",temp_fp.name])
+            str = self.run_editor(temp_fp.name)
+            return str # explicit naming to keep tempfile alive
         
 
     def switch_new_branch(self, new_branch, base_branch):
@@ -207,9 +211,9 @@ class Git:
         )
         
     def push(self, remote, source_branch, target_branch, set_upstream=False, ignore_error=False):
-        flag = "-u" if set_upstream else ""
+        flag = "-u" if set_upstream else "-v"
         return _run_shell_command(
-            ["git", "push", flag, remote, f"{source_branch}:{target_branch}"], raise_on_error=False)
+            ["git", "push", flag, remote, f"{source_branch}:{target_branch}"], raise_on_error= not ignore_error)
             
     def clear_status(self) -> bool:
         """check the work tree wether clean

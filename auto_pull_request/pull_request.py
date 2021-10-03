@@ -6,12 +6,13 @@ import github
 import glob
 from github.GithubException import GithubException, UnknownObjectException
 from github.PullRequest import PullRequest 
+from github.Repository import Repository
 from loguru import logger
 from urllib import parse
 
-from auto_pull_request.utility import dead_for_resource, dead_for_software, check_true_value_and_logger
+from auto_pull_request.utility import dead_for_resource, dead_for_software, check_true_value_and_logger, format_github_exception
 from auto_pull_request.git import Git 
-
+from setuptools_scm import get_version
 
 class RepositoryID:
     """Generate host, user and repository name from url"""
@@ -61,9 +62,11 @@ class RepositoryID:
 class Remote:
     """the object control github repo, corresponding local git remote config
 
-        self.remote_branch is the local remote branch syncing with remote repository. Such as, "origin/master".
+        self.remote_branch is the local remote branch syncing with remote repository. Such as, "origin/master". 
+        self.repo_branch: The branch on remote branch, which is pull-requested.
+        self.namebranch: the cross-repository branch name.
     """
-    def __init__(self, git:Git, repo:RepositoryID, remote_name:str, repo_branch:str, local_branch:str, gh_repo):
+    def __init__(self, git:Git, repo:RepositoryID, remote_name:str, repo_branch:str, local_branch:str, gh_repo:Repository):
         self.git = git
         self.repo = repo
         self.user = repo.user
@@ -78,6 +81,10 @@ class Remote:
     def remote_branch(self):
         return "/".join([self.remote_name, self.repo_branch])
 
+    @property
+    def namehead(self):
+        return self.user + ":" + self.repo_branch
+
     #todo set move ?
     def set_into_git(self):
         self.git.add_remote_ulr(self.user, self.remote_url)
@@ -88,7 +95,9 @@ class Remote:
         pass
 
     def exist_repo_branches(self, branch):
-        self.branches = self.gh_repo.get_branches()
+        self.branches = [branch.name for branch in self.gh_repo.get_branches()]
+        logger.debug(f"The repo {self.user}:{self.repo.repo} has branches {self.branches}. "
+            f"And branch {branch}" + (" isn't" if branch not in self.branches else "is") + " in the remote repo.")
         return branch in self.branches
 
     def clear_local(self):
@@ -101,7 +110,10 @@ class Remote:
         if not self.exist_repo_branches(self.repo_branch):
             return
 
-        self.git.fetch_branch(self.remote_name, self.local_branch)
+        try:
+            self.git.fetch_branch(self.remote_name, self.local_branch)
+        except TimeoutError:
+            logger.error(f"Git Fetching from {self.namehead} timed out. Skip It!")
         try:
             self.git.rebase(self.remote_branch, self.local_branch)
         except RuntimeError:
@@ -116,8 +128,24 @@ class Remote:
 
     def push(self, ignore_error=False):
         self.clear_local()
-        self.git.push(self.remote_name, self.local_branch, self.remote_branch, ignore_error=ignore_error)
-    
+        self.git.push(self.remote_name, self.local_branch, self.repo_branch, ignore_error=ignore_error)
+        if not self.exist_repo_branches(self.repo_branch):
+            logger.error(f"Unable to Push {self.local_branch} to {self.remote_branch}. "
+            f"Please run `git push {self.remote_name} {self.local_branch}  {self.repo_branch}`in command line. ")
+
+    def create_pr(self, fork_head_branch, content:PRContent):
+        try:
+            logger.info(f"create pull from {fork_head_branch} to {self.namehead} of {self.repo.repo}")
+            self.pr = self.gh_repo.create_pull(
+                base=self.repo_branch, head=fork_head_branch, title=content.title, body=content.body
+            )
+        except github.GithubException as e:
+            logger.error(format_github_exception("create pull request", e))
+            dead_for_resource()
+        logger.info(f"Pull-request created: {self.pr.html_url}", )
+        return self.pr
+
+
 class Auto:
     """ 
         Main Vars:
@@ -140,6 +168,7 @@ class Auto:
         labels=None,
         skip_editor="",
         token=""):
+        self.log_version()
         self.git = Git()
         self.content = PRContent(title, body)
         self.keep_message = keep_message
@@ -194,8 +223,8 @@ class Auto:
         self.target_repo_id =RepositoryID(self.target_url)
         self.host = self.target_repo_id.host
 
-        logger.success(f"Basic Info: Remote: {self.target_remote_name} Remote URL: {self.target_url}. "
-             + f"Remote branch: {self.target_branch} Local Branch: {self.local_branch}")
+        logger.success(f"[Basic Info] Remote: {self.target_remote_name}. Remote URL: {self.target_url}. "
+             + f"Remote branch: {self.target_branch}. Local Branch: {self.local_branch}.")
         
 
     def _init_credential(self):
@@ -270,61 +299,57 @@ class Auto:
     def run(self):
         self.update()
         self.sync()
-        logger.info("Done~ ^_^")
+        logger.success("Done~ ^_^")
 
     def update(self):
         self.target_remote.pull()
         self.fork_remote.pull()
-        self.fork_remote.push(ignore_error=True)
+        self.fork_remote.push()
 
     def sync(self):
         self.push_pr()
 
     def push_pr(self):
-        self.fill_content()
-        pulls = list(self.gh_target_repo.get_pulls(base=self.target_remote.repo_branch, head=self.target_remote.local_branch))
+        pulls = list(self.target_remote.gh_repo.get_pulls(base=self.target_remote.repo_branch, head=self.target_remote.local_branch))
         if not pulls:
             pr = self.create_pr()
         else:
+            logger.info("Found a existing pull-request.")
             pr = pulls[0]
             if len(pulls) > 1:
                 logger.info(f"Pull-request({pulls[1:]}) has been ignored.")
-            self.upgrade_pr_info(pr)
+            self.update_pr_info(pr)
 
     def create_pr(self):
-        try:
-            pr = self.gh_target_repo.create_pull(
-                base=self.target_remote.repo_branch, head=self.target_remote.local_branch, title=self.content.title, body=self.content.body
-            )
-        except github.GithubException as e:
-            logger.error(self._format_github_exception("create pull request", e))
-            dead_for_resource()
-        logger.info("Pull-request created: %s", pr.html_url)
-        return pr
+        self.fill_content()
+        self.target_remote.create_pr(fork_head_branch=self.fork_remote.namehead, content=self.content)
 
-    def fill_content(self):
+    def fill_content(self, pr:PullRequest=None):
         """If self.content has empty value, Get title and body summary for patches between 2 commits.
-        """
-        if self.content:
-            return
-    
-        title = "Pull request for commit after commit \
-            {begin[:SHORT_HASH_LEN]} and before {end[:SHORT_HASH_LEN]}"
-        body = self.git.get_formated_logs(self.target_remote.repo_branch, self.target_remote.local_branch)
-        if not self.skip_editor:
-            edited = self.git.editor_str(str(PRContent(title, body)))
-            self.content.reset_empty(PRContent(content=edited))
-        else:
-            self.content.reset_empty(PRContent(title, body))
+        
+        Command line fill content firstly,
+        Old pull-request fill it secondly,
+        Finally, fill it with default value and open editor to change content if it don't skiped.
 
-    def upgrade_pr_info(self, pr:PullRequest):
-        self.content.reset_empty(PRContent(pr.title, pr.body))
-       
+        """
+        if pr:
+            self.content.fill_empty(PRContent(pr.title, pr.body))
+
+        title = f"Pull request for commits from \
+            {self.fork_remote.remote_branch} To {self.target_remote.remote_branch}"
+        body = self.git.get_formated_logs(self.target_remote.remote_branch, self.target_remote.local_branch)
+        self.content.fill_empty(PRContent(title, body))
+        
+        if not self.skip_editor:
+            edited = self.git.editor_str(str(self.content))
+            self.content = PRContent(content=edited)
+
+    def update_pr_info(self, pr:PullRequest):
         if not self.keep_message:
-            self.fill_content()
+            self.fill_content(pr)
             pr.edit(title=self.content.title, body=self.content.body)
-            logger.debug("Updated pull-request title and body")
-            
+            logger.debug(f"Updated pull-request title and body: {self.content.title}, {self.content.body}")
+        
         if self.comment:
             self.gh_target_repo.get_issue(pr.number).create_comment(self.comment)
             logger.debug(f'Pull-request {pr.number} Commented: "%s"', self.comment)
@@ -332,19 +357,7 @@ class Auto:
             pr.add_to_labels(*self.labels)
             logger.debug(f"Pull-request {pr.number} added labels %s", self.labels)
 
-    @staticmethod
-    def _format_github_exception(action:str , e: GithubException):
-        url = e.data.get("documentation_url", "GitHub documentation")
-        errors_msg = "\n".join(
-            error.get("message", "") for error in e.data.get("errors", {}) # type: ignore
-        )
-        return (
-            "Unable to %s: %s (%s)\n"
-            "%s\n"
-            "Check %s for more information."
-            % (action, e.data.get("message"), e.status, errors_msg, url)
-        )
+        logger.success(f"Updated pull-request: {pr.html_url}")
 
-    def exist_remote_branch(self):
-        pass
-        # git ls-remote --exit-code --heads git@github.com:user/repo.git branch-name
+    def log_version(self):
+        logger.info(f"Auto-Pull-Request 🌟version:{get_version()}")
