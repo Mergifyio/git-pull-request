@@ -11,11 +11,10 @@ from loguru import logger
 SHORT_HASH_LEN = 5
 TIMEOUT_SECOND = 30
 
-def _run_shell_command(cmd: list[str], input: str ="", raise_on_error: bool=True) -> str:
+def _run_shell_command(cmd: list[str], input: str =None, raise_on_error: bool=True) -> str:
     new_cmd = list(filter((lambda x: x), cmd))
     
     logger.debug(f"running '{new_cmd}' with input of '{input}'")
-    assert type(input) == str, "type of input should be str"
     out = ""
     try:
         complete = subprocess.run(cmd, input=input, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding="utf-8")
