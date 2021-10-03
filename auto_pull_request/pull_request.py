@@ -360,4 +360,4 @@ class Auto:
         logger.success(f"Updated pull-request: {pr.html_url}")
 
     def log_version(self):
-        logger.info(f"Auto-Pull-Request 🌟version:{get_version()}")
+        logger.success(f"Auto-Pull-Request 🌟version:{get_version()}")
