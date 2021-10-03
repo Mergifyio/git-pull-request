@@ -304,7 +304,7 @@ class Auto:
             self.upgrade_pr_info(pr)
 
     def create_pr(self):
-        self.fork_remote.create_Pr(self.target_remote.repo_branch, self.content)
+        self.fork_remote.create_pr(self.target_remote.repo_branch, self.content)
 
     def fill_content(self):
         """If self.content has empty value, Get title and body summary for patches between 2 commits.
