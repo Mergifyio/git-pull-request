@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from os import fork
 import sys
 import click
 from loguru import logger
@@ -39,7 +40,12 @@ from auto_pull_request.pull_request import Auto
     "As a example, target-remote of a cloned repository from other other people ususally is \"origin\"."
     )
 @click.option("--target-branch", "-b",
-    help="The local branch to send a pull-request to. Default value is auto-detected from .git/config. "
+    help="The remote branch of target branch to which we send a pull-request. Default value is auto-detected from .git/config. "
+    "There options, target-url, target-remote and target-branch, usually needed when you cloned from your repository, or you want "
+    "to custom a pull-request.\n"
+    )
+@click.option("--fork-branch", "-b",
+    help="The remote branch of fork repo from which we send a pull-request. Default value is auto-detected from .git/config. "
     "There options, target-url, target-remote and target-branch, usually needed when you cloned from your repository, or you want "
     "to custom a pull-request.\n"
     )
@@ -51,11 +57,12 @@ from auto_pull_request.pull_request import Auto
     "--comment", 
     help="Comment to publish when updating the pull-request")
 @click.option(
-    "--keep-message/--ignore-message", default=False, show_default=True,
+    "--keep-message",
     help="For a existing pull-request, Don't open an editor to change the pull request body.",
     )
 @click.option(
-    "--skip-editor/--open-editor", default=False, show_default=True,
+    "--skip-editor",
+    type=str,
     help="If not empty, use parameter of --title and --message instead of " 
     "opening edition for pull-requester content.")
 @click.option("--labels", "-l",
@@ -65,12 +72,13 @@ from auto_pull_request.pull_request import Auto
     "If empty, we will promot in terminal to input corresponding infos.\n"
     "How to get you personal token? Please check this https://docs.github.com/en/authentication"
     "/keeping-your-account-and-data-secure/creating-a-personal-access-token")
-def main(debug, target_url, target_remote, target_branch, title, body, keep_message, labels, comment, skip_editor, token):
+def main(debug, target_url, target_remote, target_branch, fork_branch, title, body, keep_message, labels, comment, skip_editor, token):
     log_info(debug)
     Auto(
         target_url=target_url,
         target_remote=target_remote,
         target_branch=target_branch,
+        fork_branch=fork_branch,
         title=title,
         body=body,
         comment=comment,
