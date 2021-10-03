@@ -222,8 +222,8 @@ class Auto:
         self.target_repo_id =RepositoryID(self.target_url)
         self.host = self.target_repo_id.host
 
-        logger.success(f"Basic Info: Remote: {self.target_remote_name} Remote URL: {self.target_url}. "
-             + f"Remote branch: {self.target_branch} Local Branch: {self.local_branch}")
+        logger.success(f"[Basic Info] Remote: {self.target_remote_name}. Remote URL: {self.target_url}. "
+             + f"Remote branch: {self.target_branch}. Local Branch: {self.local_branch}.")
         
 
     def _init_credential(self):

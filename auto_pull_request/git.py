@@ -211,7 +211,7 @@ class Git:
         )
         
     def push(self, remote, source_branch, target_branch, set_upstream=False, ignore_error=False):
-        flag = "-u" if set_upstream else ""
+        flag = "-u" if set_upstream else "-v"
         return _run_shell_command(
             ["git", "push", flag, remote, f"{source_branch}:{target_branch}"], raise_on_error= not ignore_error)
             
