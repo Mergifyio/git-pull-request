@@ -355,3 +355,5 @@ class Auto:
         if self.labels:
             pr.add_to_labels(*self.labels)
             logger.debug(f"Pull-request {pr.number} added labels %s", self.labels)
+
+        logger.success(f"Updated pull-request: {pr.html_url}")
