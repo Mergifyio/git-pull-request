@@ -76,7 +76,9 @@ class Remote:
         self.local_branch = local_branch
         self.gh_repo = gh_repo
         # TODO0 set the value int git.config
-    
+
+        self.set_into_git()
+
     @property
     def remote_branch(self):
         return "/".join([self.remote_name, self.repo_branch])
