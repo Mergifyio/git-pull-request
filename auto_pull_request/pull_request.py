@@ -284,7 +284,7 @@ class Auto:
     def run(self):
         self.update()
         self.sync()
-        logger.info("Done~ ^_^")
+        logger.success("Done~ ^_^")
 
     def update(self):
         self.target_remote.pull()
@@ -300,10 +300,11 @@ class Auto:
         if not pulls:
             pr = self.create_pr()
         else:
+            logger.info("Found a existing pull-request.")
             pr = pulls[0]
             if len(pulls) > 1:
                 logger.info(f"Pull-request({pulls[1:]}) has been ignored.")
-            self.upgrade_pr_info(pr)
+            self.update_pr_info(pr)
 
     def create_pr(self):
         self.target_remote.create_pr(fork_head_branch=self.fork_remote.repo_branch, content=self.content)
@@ -311,25 +312,22 @@ class Auto:
     def fill_content(self):
         """If self.content has empty value, Get title and body summary for patches between 2 commits.
         """
-        if self.content:
-            return
-    
         title = "Pull request for commit after commit \
             {begin[:SHORT_HASH_LEN]} and before {end[:SHORT_HASH_LEN]}"
         body = self.git.get_formated_logs(self.target_remote.remote_branch, self.target_remote.local_branch)
-        if not self.skip_editor:
-            edited = self.git.editor_str(str(PRContent(title, body)))
-            self.content.reset_empty(PRContent(content=edited))
-        else:
-            self.content.reset_empty(PRContent(title, body))
+        self.content.fill_empty(PRContent(title, body))
 
-    def upgrade_pr_info(self, pr:PullRequest):
-        self.content.reset_empty(PRContent(pr.title, pr.body))
+        if not self.skip_editor:
+            edited = self.git.editor_str(str(self.content))
+            self.content = PRContent(content=edited)
+
+    def update_pr_info(self, pr:PullRequest):
+        self.content.fill_empty(PRContent(pr.title, pr.body))
        
         if not self.keep_message:
             self.fill_content()
             pr.edit(title=self.content.title, body=self.content.body)
-            logger.debug("Updated pull-request title and body")
+            logger.debug("Updated pull-request title and body: {self.title}, {self.body}")
             
         if self.comment:
             self.gh_target_repo.get_issue(pr.number).create_comment(self.comment)

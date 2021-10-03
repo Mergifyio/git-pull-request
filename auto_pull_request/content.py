@@ -15,7 +15,7 @@ class PRContent:
     def _init_from_content(self, content: str):
         self.title, _, self.body  = content.strip(" ").partition("\n")
 
-    def reset_empty(self, other: "PRContent"):
+    def fill_empty(self, other: "PRContent"):
         if not self.title:
             self.title = other.title
         if not self.body:

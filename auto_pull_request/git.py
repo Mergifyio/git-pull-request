@@ -167,6 +167,7 @@ class Git:
     def editor_str(self, text: str = ""):
         with tempfile.NamedTemporaryFile() as temp_fp:
             temp_fp.write(text.encode(encoding="utf-8"))
+            temp_fp.seek(0)
             _run_shell_command(cmd=["cat",temp_fp.name])
             return self.run_editor(temp_fp.name)
         
