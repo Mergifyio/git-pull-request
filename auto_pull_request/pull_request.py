@@ -303,7 +303,7 @@ class Auto:
     def update(self):
         self.target_remote.pull()
         self.fork_remote.pull()
-        self.fork_remote.push(ignore_error=True)
+        self.fork_remote.push()
 
     def sync(self):
         self.push_pr()
