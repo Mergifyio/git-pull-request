@@ -61,7 +61,7 @@ class RepositoryID:
 class Remote:
     """the object control github repo, corresponding local git remote config
 
-        self.remote_branch is the local remote branch syncing with remote repository. Such as, "origin/master".
+        self.remote_branch is the local remote branch syncing with remote repository. Such as, "origin/master". And it will be pull-requested.
     """
     def __init__(self, git:Git, repo:RepositoryID, remote_name:str, repo_branch:str, local_branch:str, gh_repo):
         self.git = git
@@ -118,10 +118,10 @@ class Remote:
         self.clear_local()
         self.git.push(self.remote_name, self.local_branch, self.remote_branch, ignore_error=ignore_error)
 
-    def create_pr(self, base_remote_branch, content:PRContent):
+    def create_pr(self, fork_head_branch, content:PRContent):
         try:
             self.pr = self.gh_repo.create_pull(
-                base=base_remote_branch, head=self.remote_branch, title=content.title, body=content.body
+                base=self.remote_branch, head=fork_head_branch, title=content.title, body=content.body
             )
         except github.GithubException as e:
             logger.error(format_github_exception("create pull request", e))

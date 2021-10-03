@@ -1,6 +1,7 @@
 
 import operator
 import os
+import json
 from loguru import logger
 
 from github import GithubException
@@ -23,11 +24,11 @@ def check_and_logger(value, msg:str="", exit_code=None, *error_values):
 
 def format_github_exception(action:str , e: GithubException):
     url = e.data.get("documentation_url", "GitHub documentation")
-    errors_msg = "\n".join(
-        error.get("message", "") for error in e.data.get("errors", {}) # type: ignore
+    errors_msg = "; ".join(
+        json.dump(error) for error in e.data.get("errors", {}) # type: ignore
     )
     return f"Unable to {action}: {e.data.get('message')} ({e.status}). Errors: {errors_msg}. \
-            Check {url} for more information."
+            Check {url} for more information.{e}"
 
 def zero_value(value):
     if value != None:
