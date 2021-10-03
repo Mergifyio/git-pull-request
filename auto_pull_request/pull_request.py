@@ -320,10 +320,10 @@ class Auto:
             edited = self.git.editor_str(str(PRContent(title, body)))
             self.content.fill_empty(PRContent(content=edited))
         else:
-            self.content.reset_empty(PRContent(title, body))
+            self.content.fill_empty(PRContent(title, body))
 
     def upgrade_pr_info(self, pr:PullRequest):
-        self.content.reset_empty(PRContent(pr.title, pr.body))
+        self.content.fill_empty(PRContent(pr.title, pr.body))
        
         if not self.keep_message:
             self.fill_content()
