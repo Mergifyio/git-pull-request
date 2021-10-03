@@ -6,6 +6,7 @@ import github
 import glob
 from github.GithubException import GithubException, UnknownObjectException
 from github.PullRequest import PullRequest 
+from github.Repository import Repository
 from loguru import logger
 from urllib import parse
 
@@ -64,7 +65,7 @@ class Remote:
         self.remote_branch is the local remote branch syncing with remote repository. Such as, "origin/master". 
         self.repo_branch: The branch on remote branch, which is pull-requested.
     """
-    def __init__(self, git:Git, repo:RepositoryID, remote_name:str, repo_branch:str, local_branch:str, gh_repo):
+    def __init__(self, git:Git, repo:RepositoryID, remote_name:str, repo_branch:str, local_branch:str, gh_repo:Repository):
         self.git = git
         self.repo = repo
         self.user = repo.user
@@ -93,9 +94,9 @@ class Remote:
         pass
 
     def exist_repo_branches(self, branch):
-        self.branches = self.gh_repo.get_branches()
+        self.branches = [branch.name for branch in self.gh_repo.get_branches()]
         logger.debug(f"The repo {self.user}:{self.repo.repo} has branches {self.branches}. "
-            f"And branch {branch}" + ("isn't" if branch in self.branches else "is") + " in remote repo.")
+            f"And branch {branch}" + (" isn't" if branch not in self.branches else "is") + " in remote repo.")
         return branch in self.branches
 
     def clear_local(self):
