@@ -1,14 +1,16 @@
 
-from auto_pull_request.content import PRContent
+
 
 import os
 import github 
 import glob
-from github.GithubException import GithubException, UnknownObjectException
-from github.PullRequest import PullRequest 
 from loguru import logger
 from urllib import parse
 
+from github.GithubException import GithubException, UnknownObjectException
+from github.PullRequest import PullRequest 
+
+from auto_pull_request.content import PRContent
 from auto_pull_request.utility import dead_for_resource, dead_for_software, check_true_value_and_logger
 from auto_pull_request.git import Git 
 
@@ -311,13 +313,12 @@ class Auto:
         """
         if self.content:
             return
-    
-        title = "Pull request for commit after commit \
-            {begin[:SHORT_HASH_LEN]} and before {end[:SHORT_HASH_LEN]}"
+
+        title = self.git.get_formated_title(self.target_remote.repo_branch, self.target_remote.local_branch)
         body = self.git.get_formated_logs(self.target_remote.repo_branch, self.target_remote.local_branch)
         if not self.skip_editor:
             edited = self.git.editor_str(str(PRContent(title, body)))
-            self.content.reset_empty(PRContent(content=edited))
+            self.content.fill_empty(PRContent(content=edited))
         else:
             self.content.reset_empty(PRContent(title, body))
 
