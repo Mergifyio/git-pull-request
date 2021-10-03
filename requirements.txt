@@ -1,4 +1,0 @@
-loguru==0.5.3
-click==8.0.1å
-attrs==21.2.0
-pygithub==1.55
