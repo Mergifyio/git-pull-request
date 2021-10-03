@@ -314,7 +314,7 @@ class Auto:
     
         title = "Pull request for commit after commit \
             {begin[:SHORT_HASH_LEN]} and before {end[:SHORT_HASH_LEN]}"
-        body = self.git.get_formated_logs(self.target_remote.repo_branch, self.target_remote.local_branch)
+        body = self.git.get_formated_logs(self.target_remote.remote_branch, self.target_remote.local_branch)
         if not self.skip_editor:
             edited = self.git.editor_str(str(PRContent(title, body)))
             self.content.reset_empty(PRContent(content=edited))
