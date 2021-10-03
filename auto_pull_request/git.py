@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 
 from subprocess import TimeoutExpired
-from auto_pull_request.utility import quoted_str, assume_timeout_exception
+from auto_pull_request.utility import quoted_str, stop_timeout_exception
 from loguru import logger
 
 
@@ -197,7 +197,7 @@ class Git:
                 _run_shell_command(["git", "remote", "add", remote, url])
         logger.info(f"The config has been add. The the url of {remote} remote is {url}.")
 
-    @assume_timeout_exception
+    @stop_timeout_exception
     def fetch_branch(self, repo, branch):
         return _run_shell_command(["git", "fetch", repo, branch])
     
@@ -212,8 +212,8 @@ class Git:
         return _run_shell_command(
             ["git", "rebase", upstream, branch]
         )
-        
-    @assume_timeout_exception    
+
+    @stop_timeout_exception    
     def push(self, remote, source_branch, target_branch, set_upstream=False, ignore_error=False):
         flag = "-u" if set_upstream else ""
         return _run_shell_command(

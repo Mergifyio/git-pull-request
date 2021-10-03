@@ -112,10 +112,7 @@ class Remote:
         if not self.exist_repo_branches(self.repo_branch):
             return
 
-        try:
-            self.git.fetch_branch(self.remote_name, self.local_branch)
-        except TimeoutError:
-            logger.error(f"Git Fetching from {self.namehead} timed out. Skip It!")
+        self.git.fetch_branch(self.remote_name, self.local_branch)
         try:
             self.git.rebase(self.remote_branch, self.local_branch)
         except RuntimeError:
