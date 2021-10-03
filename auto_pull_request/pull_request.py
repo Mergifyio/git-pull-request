@@ -338,12 +338,8 @@ class Auto:
         errors_msg = "\n".join(
             error.get("message", "") for error in e.data.get("errors", {}) # type: ignore
         )
-        return (
-            "Unable to %s: %s (%s)\n"
-            "%s\n"
-            "Check %s for more information."
-            % (action, e.data.get("message"), e.status, errors_msg, url)
-        )
+        return f"Unable to {action}: {e.data.get('message')} ({e.status}). Errors: {errors_msg}. \
+                Check {url} for more information."
 
     def exist_remote_branch(self):
         pass
