@@ -64,6 +64,7 @@ class Remote:
     """the object control github repo, corresponding local git remote config
 
         self.remote_branch is the local remote branch syncing with remote repository. Such as, "origin/master".
+        self.name_branch: user for head branch of pull-request.
     """
     def __init__(self, git:Git, repo:RepositoryID, remote_name:str, repo_branch:str, local_branch:str, gh_repo):
         self.git = git
@@ -75,10 +76,17 @@ class Remote:
         self.local_branch = local_branch
         self.gh_repo = gh_repo
         # TODO0 set the value int git.config
-    
+
+        self.set_into_git()
+
     @property
     def remote_branch(self):
         return "/".join([self.remote_name, self.repo_branch])
+
+            
+    @property
+    def name_branch(self):
+        return ":".join([self.remote_name, self.repo_branch])
 
     #todo set move ?
     def set_into_git(self):
@@ -288,7 +296,7 @@ class Auto:
 
     def push_pr(self):
         self.fill_content()
-        pulls = list(self.gh_target_repo.get_pulls(base=self.target_remote.repo_branch, head=self.target_remote.local_branch))
+        pulls = list(self.gh_target_repo.get_pulls(base=self.target_remote.repo_branch, head=self.fork_remote.name_branch))
         if not pulls:
             pr = self.create_pr()
         else:
@@ -300,7 +308,7 @@ class Auto:
     def create_pr(self):
         try:
             pr = self.gh_target_repo.create_pull(
-                base=self.target_remote.repo_branch, head=self.target_remote.local_branch, title=self.content.title, body=self.content.body
+                base=self.target_remote.repo_branch, head=self.fork_remote.name_branch, title=self.content.title, body=self.content.body
             )
         except github.GithubException as e:
             logger.error(self._format_github_exception("create pull request", e))
