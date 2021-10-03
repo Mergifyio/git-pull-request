@@ -16,20 +16,17 @@ def _run_shell_command(cmd: list[str], input: str ="", raise_on_error: bool=True
     
     logger.debug(f"running '{new_cmd}' with input of '{input}'")
     assert type(input) == str, "type of input should be str"
-    output = subprocess.PIPE
-    sub = subprocess.Popen(cmd, stdin=subprocess.PIPE, 
-        stdout=output, stderr=output, encoding="utf-8")
+    out = ""
     try:
-        out, _ = sub.communicate(input=input, timeout=TIMEOUT_SECOND)
+        complete = subprocess.run(cmd, input=input, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding="utf-8")
+        out = complete.stdout
     except TimeoutExpired:
-        sub.kill()
         logger.debug(f"{cmd} is killed because of TIMEOUTERROR")
-        out = ""
         raise TimeoutError
-    if raise_on_error and sub.returncode:
+    if raise_on_error and complete.returncode:
         logger.error(f"The output of running command: {out}")
-        raise RuntimeError("%s returned %d" % (cmd, sub.returncode))
-    logger.debug(f"returned code of {cmd}: {sub.returncode}; output of that: {out.strip()}")
+        raise RuntimeError("%s returned %d" % (cmd, complete.returncode))
+    logger.debug(f"returned code of {cmd}: {complete.returncode}; output of that: {out}")
     return out.strip()
 
     
