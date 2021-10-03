@@ -19,7 +19,7 @@ class PRContent:
         if not self.title:
             self.title = other.title
         if not self.body:
-            self.body = other.title
+            self.body = other.body
         return self
 
     def __str__(self):

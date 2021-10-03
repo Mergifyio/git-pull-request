@@ -295,7 +295,6 @@ class Auto:
         self.push_pr()
 
     def push_pr(self):
-        self.fill_content()
         pulls = list(self.gh_target_repo.get_pulls(base=self.target_remote.repo_branch, head=self.target_remote.local_branch))
         if not pulls:
             pr = self.create_pr()
@@ -307,28 +306,35 @@ class Auto:
             self.update_pr_info(pr)
 
     def create_pr(self):
+        self.fill_content()
         self.target_remote.create_pr(fork_head_branch=self.fork_remote.repo_branch, content=self.content)
 
-    def fill_content(self):
+    def fill_content(self, pr:PullRequest=None):
         """If self.content has empty value, Get title and body summary for patches between 2 commits.
+        
+        Command line fill content firstly,
+        Old pull-request fill it secondly,
+        Finally, fill it with default value and open editor to change content if it don't skiped.
+
         """
-        title = "Pull request for commit after commit \
-            {begin[:SHORT_HASH_LEN]} and before {end[:SHORT_HASH_LEN]}"
+        if pr:
+            self.content.fill_empty(PRContent(pr.title, pr.body))
+
+        title = f"Pull request for commits from \
+            {self.fork_remote.remote_branch} To {self.target_remote.remote_branch}"
         body = self.git.get_formated_logs(self.target_remote.remote_branch, self.target_remote.local_branch)
         self.content.fill_empty(PRContent(title, body))
-
+        
         if not self.skip_editor:
             edited = self.git.editor_str(str(self.content))
             self.content = PRContent(content=edited)
 
     def update_pr_info(self, pr:PullRequest):
-        self.content.fill_empty(PRContent(pr.title, pr.body))
-       
         if not self.keep_message:
-            self.fill_content()
+            self.fill_content(pr)
             pr.edit(title=self.content.title, body=self.content.body)
-            logger.debug("Updated pull-request title and body: {self.title}, {self.body}")
-            
+            logger.debug(f"Updated pull-request title and body: {self.content.title}, {self.content.body}")
+        
         if self.comment:
             self.gh_target_repo.get_issue(pr.number).create_comment(self.comment)
             logger.debug(f'Pull-request {pr.number} Commented: "%s"', self.comment)

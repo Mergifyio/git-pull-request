@@ -169,7 +169,8 @@ class Git:
             temp_fp.write(text.encode(encoding="utf-8"))
             temp_fp.seek(0)
             _run_shell_command(cmd=["cat",temp_fp.name])
-            return self.run_editor(temp_fp.name)
+            str = self.run_editor(temp_fp.name)
+            return str # explicit naming to keep tempfile alive
         
 
     def switch_new_branch(self, new_branch, base_branch):
