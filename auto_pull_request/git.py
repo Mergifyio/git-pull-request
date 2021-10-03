@@ -145,10 +145,11 @@ class Git:
                 "log",
                 "--no-merges",
                 "--format=" + self.commit_format["log"],
-                "%s..%s" % (begin, end),
+                f"{begin}..{end}",
             ])
             
-    def run_editor(self, filename)-> str:
+    def run_editor(self, filename:str)-> str:
+        logger.error(filename)
         editor = _run_shell_command(["git", "var", "GIT_EDITOR"])
         if not editor:
             logger.warning(
@@ -162,7 +163,7 @@ class Git:
             return body.read().strip()
       
     def editor_str(self, body: str = ""):
-        with tempfile.TemporaryFile() as temp_fp:
+        with tempfile.NamedTemporaryFile() as temp_fp:
             temp_fp.write(body.encode(encoding="utf-8"))
             return self.run_editor(temp_fp.name)
         
