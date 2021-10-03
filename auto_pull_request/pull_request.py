@@ -9,7 +9,7 @@ from github.PullRequest import PullRequest
 from loguru import logger
 from urllib import parse
 
-from auto_pull_request.utility import dead_for_resource, dead_for_software, check_true_value_and_logger
+from auto_pull_request.utility import dead_for_resource, dead_for_software, check_true_value_and_logger, format_github_exception
 from auto_pull_request.git import Git 
 
 
@@ -117,6 +117,18 @@ class Remote:
     def push(self, ignore_error=False):
         self.clear_local()
         self.git.push(self.remote_name, self.local_branch, self.remote_branch, ignore_error=ignore_error)
+
+    def create_pr(self, base_remote_branch, content:PRContent):
+        try:
+            self.pr = self.gh_repo.create_pull(
+                base=base_remote_branch, head=self.remote_branch, title=content.title, body=content.body
+            )
+        except github.GithubException as e:
+            logger.error(format_github_exception("create pull request", e))
+            dead_for_resource()
+        logger.info("Pull-request created: %s", self.pr.html)
+        return self.pr
+
     
 class Auto:
     """ 
@@ -292,15 +304,7 @@ class Auto:
             self.upgrade_pr_info(pr)
 
     def create_pr(self):
-        try:
-            pr = self.gh_target_repo.create_pull(
-                base=self.target_remote.repo_branch, head=self.target_remote.local_branch, title=self.content.title, body=self.content.body
-            )
-        except github.GithubException as e:
-            logger.error(self._format_github_exception("create pull request", e))
-            dead_for_resource()
-        logger.info("Pull-request created: %s", pr.html_url)
-        return pr
+        self.fork_remote.create_Pr(self.target_remote.repo_branch, self.content)
 
     def fill_content(self):
         """If self.content has empty value, Get title and body summary for patches between 2 commits.
@@ -332,14 +336,6 @@ class Auto:
             pr.add_to_labels(*self.labels)
             logger.debug(f"Pull-request {pr.number} added labels %s", self.labels)
 
-    @staticmethod
-    def _format_github_exception(action:str , e: GithubException):
-        url = e.data.get("documentation_url", "GitHub documentation")
-        errors_msg = "\n".join(
-            error.get("message", "") for error in e.data.get("errors", {}) # type: ignore
-        )
-        return f"Unable to {action}: {e.data.get('message')} ({e.status}). Errors: {errors_msg}. \
-                Check {url} for more information."
 
     def exist_remote_branch(self):
         pass
