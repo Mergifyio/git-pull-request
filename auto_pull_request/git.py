@@ -12,20 +12,20 @@ SHORT_HASH_LEN = 5
 TIMEOUT_SECOND = 30
 
 def _run_shell_command(cmd: list[str], input: str =None, raise_on_error: bool=True) -> str:
-    new_cmd = list(filter((lambda x: x), cmd))
+    new_cmd = " ".join(list(filter((lambda x: x), cmd)))
     
     logger.debug(f"running '{new_cmd}' with input of '{input}'")
     out = ""
     try:
-        complete = subprocess.run(cmd, input=input, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding="utf-8")
+        complete = subprocess.run(new_cmd, input=input, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True, encoding="utf-8")
         out = complete.stdout
     except TimeoutExpired:
         logger.debug(f"{cmd} is killed because of TIMEOUTERROR")
         raise TimeoutError
     if raise_on_error and complete.returncode:
-        logger.error(f"The output of running command: {out}")
-        raise RuntimeError("%s returned %d" % (cmd, complete.returncode))
-    logger.debug(f"returned code of {cmd}: {complete.returncode}; output of that: {out}")
+        logger.error(f"command{complete.args}The output of running : {out}")
+        raise RuntimeError("%s returned %d" % (new_cmd, complete.returncode))
+    logger.debug(f"returned code of {new_cmd}: {complete.returncode}; output of that: {out}")
     return out.strip()
 
     
