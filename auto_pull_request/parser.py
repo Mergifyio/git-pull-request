@@ -51,12 +51,11 @@ from auto_pull_request.pull_request import Auto
     "--comment", 
     help="Comment to publish when updating the pull-request")
 @click.option(
-    "--keep-message",
+    "--keep-message/--ignore-message", default=False, show_default=True,
     help="For a existing pull-request, Don't open an editor to change the pull request body.",
     )
 @click.option(
-    "--skip-editor",
-    type=str,
+    "--skip-editor/--open-editor", default=False, show_default=True,
     help="If not empty, use parameter of --title and --message instead of " 
     "opening edition for pull-requester content.")
 @click.option("--labels", "-l",

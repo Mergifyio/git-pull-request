@@ -12,7 +12,7 @@ SHORT_HASH_LEN = 5
 
 
 def _run_shell_command(cmd: list[str], input: str ="", raise_on_error: bool=True) -> str:
-    new_cmd = filter((lambda x: x), cmd)
+    new_cmd = list(filter((lambda x: x), cmd))
     
     logger.debug(f"running '{new_cmd}' with input of '{input}'")
     assert type(input) == str, "type of input should be str"
