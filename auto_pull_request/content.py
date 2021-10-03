@@ -13,8 +13,10 @@ class PRContent:
                 self._init_from_content(f.read())
 
     def _init_from_content(self, content: str):
-        self.title, _, self.body  = content.strip(" ").partition("\n")
-
+        self.title, _, self.body  = content.strip("\n ").partition("\n")
+        self.title = self.title.strip("\n")
+        self.body = self.body.strip("\n")
+        
     def fill_empty(self, other: "PRContent"):
         if not self.title:
             self.title = other.title

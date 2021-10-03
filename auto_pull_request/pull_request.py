@@ -79,6 +79,10 @@ class Remote:
     def remote_branch(self):
         return "/".join([self.remote_name, self.repo_branch])
 
+    @property
+    def namehead(self):
+        return self.repo.repo + ":" + self.repo_branch
+
     #todo set move ?
     def set_into_git(self):
         self.git.add_remote_ulr(self.user, self.remote_url)
@@ -131,7 +135,7 @@ class Remote:
         logger.info("Pull-request created: %s", self.pr.html)
         return self.pr
 
-    
+
 class Auto:
     """ 
         Main Vars:
@@ -295,7 +299,7 @@ class Auto:
         self.push_pr()
 
     def push_pr(self):
-        pulls = list(self.gh_target_repo.get_pulls(base=self.target_remote.repo_branch, head=self.target_remote.local_branch))
+        pulls = list(self.target_remote.gh_repo.get_pulls(base=self.target_remote.repo_branch, head=self.target_remote.local_branch))
         if not pulls:
             pr = self.create_pr()
         else:
@@ -307,7 +311,7 @@ class Auto:
 
     def create_pr(self):
         self.fill_content()
-        self.target_remote.create_pr(fork_head_branch=self.fork_remote.repo_branch, content=self.content)
+        self.target_remote.create_pr(fork_head_branch=self.fork_remote.namehead, content=self.content)
 
     def fill_content(self, pr:PullRequest=None):
         """If self.content has empty value, Get title and body summary for patches between 2 commits.
