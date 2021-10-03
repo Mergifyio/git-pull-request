@@ -120,6 +120,7 @@ class Remote:
 
     def create_pr(self, fork_head_branch, content:PRContent):
         try:
+            logger.info(f"create pull from {fork_head_branch} to {self.remote_branch} of {self.repo.repo}")
             self.pr = self.gh_repo.create_pull(
                 base=self.remote_branch, head=fork_head_branch, title=content.title, body=content.body
             )
