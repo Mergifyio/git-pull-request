@@ -61,7 +61,8 @@ class RepositoryID:
 class Remote:
     """the object control github repo, corresponding local git remote config
 
-        self.remote_branch is the local remote branch syncing with remote repository. Such as, "origin/master". And it will be pull-requested.
+        self.remote_branch is the local remote branch syncing with remote repository. Such as, "origin/master". 
+        self.repo_branch: The branch on remote branch, which is pull-requested.
     """
     def __init__(self, git:Git, repo:RepositoryID, remote_name:str, repo_branch:str, local_branch:str, gh_repo):
         self.git = git
@@ -122,7 +123,7 @@ class Remote:
         try:
             logger.info(f"create pull from {fork_head_branch} to {self.remote_branch} of {self.repo.repo}")
             self.pr = self.gh_repo.create_pull(
-                base=self.remote_branch, head=fork_head_branch, title=content.title, body=content.body
+                base=self.repo_branch, head=fork_head_branch, title=content.title, body=content.body
             )
         except github.GithubException as e:
             logger.error(format_github_exception("create pull request", e))
@@ -305,7 +306,7 @@ class Auto:
             self.upgrade_pr_info(pr)
 
     def create_pr(self):
-        self.target_remote.create_pr(self.target_remote.repo_branch, self.content)
+        self.target_remote.create_pr(head=self.fork_remote.repo_branch, content=self.content)
 
     def fill_content(self):
         """If self.content has empty value, Get title and body summary for patches between 2 commits.
