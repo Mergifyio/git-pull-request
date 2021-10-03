@@ -25,7 +25,7 @@ def _run_shell_command(cmd: list[str], input: str ="", raise_on_error: bool=True
     if raise_on_error and sub.returncode:
         logger.error(f"The output of running command: {out}")
         raise RuntimeError("%s returned %d" % (cmd, sub.returncode))
-    logger.debug(f"output of {cmd}: {out.strip()}")
+    logger.debug(f"returned code of {cmd}: {sub.returncode}; output of that: {out.strip()}")
     return out.strip()
 
     
@@ -206,10 +206,10 @@ class Git:
             ["git", "rebase", upstream, branch]
         )
         
-    def push(self, remote, source_branch, target_branch, set_upstream=False):
+    def push(self, remote, source_branch, target_branch, set_upstream=False, ignore_error=False):
         flag = "-u" if set_upstream else ""
         return _run_shell_command(
-            ["git", "push", flag, remote, f"{source_branch}:{target_branch}"])
+            ["git", "push", flag, remote, f"{source_branch}:{target_branch}"], raise_on_error=False)
             
     def clear_status(self) -> bool:
         """check the work tree wether clean

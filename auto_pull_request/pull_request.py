@@ -63,7 +63,7 @@ class Remote:
 
         self.remote_branch is the local remote branch syncing with remote repository. Such as, "origin/master".
     """
-    def __init__(self, git:Git, repo:RepositoryID, remote_name:str, repo_branch:str, local_branch:str):
+    def __init__(self, git:Git, repo:RepositoryID, remote_name:str, repo_branch:str, local_branch:str, gh_repo):
         self.git = git
         self.repo = repo
         self.user = repo.user
@@ -71,6 +71,7 @@ class Remote:
         self.remote_url = repo.https_url() #TODO use https or ssh url.
         self.repo_branch = repo_branch
         self.local_branch = local_branch
+        self.gh_repo = gh_repo
         # TODO0 set the value int git.config
     
     @property
@@ -85,8 +86,16 @@ class Remote:
     @classmethod
     def create_from_git(self):
         pass
+
+    def exist_repo_branches(self, branch):
+        self.branches = self.gh_repo.get_branches()
+        return branch in self.branches
+
  
     def pull(self):
+        if not self.exist_repo_branches(self.repo_branch):
+            return
+
         if not self.git.clear_status():
             logger.error("Please commit local changes firstly")
             dead_for_resource()
@@ -104,8 +113,11 @@ class Remote:
             )
             dead_for_resource()
 
-    def push(self):
-        self.git.push(self.remote_name, self.local_branch, self.remote_branch)
+    def push(self, ignore_error=False):
+        if self.exist_repo_branches(self.repo_branch):
+            self.pull()
+            
+        self.git.push(self.remote_name, self.local_branch, self.remote_branch, ignore_error=ignore_error)
     
 class Auto:
     """ 
@@ -150,13 +162,16 @@ class Auto:
             repo = self.target_repo_id, 
             remote_name = self.target_remote_name, 
             repo_branch = self.target_branch, 
-            local_branch=self.local_branch)
+            local_branch=self.local_branch,
+            gh_repo=self.gh_target_repo,
+        )
         self.fork_remote = Remote(
             git = self.git,
             repo =  RepositoryID(self.gh_fork_repo.clone_url),
             remote_name = self.gh_user.login,
             repo_branch = self.target_branch, #TODO costume repo_branch
-            local_branch= self.local_branch
+            local_branch= self.local_branch,
+            gh_repo=self.gh_fork_repo,
         )
         if self.fork_remote.repo == self.target_remote.repo:
             logger.error(f"Detect the remote target repo is the forked repository, which is {self.fork_remote.remote_url}. Please assigned --target-remote, --target-url with options.")
@@ -180,7 +195,7 @@ class Auto:
         self.target_repo_id =RepositoryID(self.target_url)
         self.host = self.target_repo_id.host
 
-        logger.info(f"Basic Info: Remote: {self.target_remote_name} Remote URL: {self.target_url}. "
+        logger.success(f"Basic Info: Remote: {self.target_remote_name} Remote URL: {self.target_url}. "
              + f"Remote branch: {self.target_branch} Local Branch: {self.local_branch}")
         
 
@@ -251,7 +266,7 @@ class Auto:
         
         assert self.gh_fork_repo and self.gh_fork_repo.clone_url, "fork repo should not empty"
 
-        logger.info(f"Forked repository: {self.gh_fork_repo.clone_url}", )
+        logger.success(f"Forked repository: {self.gh_fork_repo.clone_url}", )
         
     def run(self):
         self.update()
@@ -259,7 +274,7 @@ class Auto:
         logger.info("Done~ ^_^")
 
     def update(self):
-        self.fork_remote.push()
+        self.fork_remote.push(ignore_error=True)
         self.target_remote.pull()
         self.fork_remote.pull()
 
