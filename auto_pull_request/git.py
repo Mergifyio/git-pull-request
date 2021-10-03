@@ -4,12 +4,12 @@ import re
 import subprocess
 import tempfile
 
-
+from subprocess import TimeoutExpired
 from loguru import logger
 
 
 SHORT_HASH_LEN = 5
-
+TIMEOUT_SECOND = 30
 
 def _run_shell_command(cmd: list[str], input: str ="", raise_on_error: bool=True) -> str:
     new_cmd = list(filter((lambda x: x), cmd))
@@ -20,11 +20,11 @@ def _run_shell_command(cmd: list[str], input: str ="", raise_on_error: bool=True
     sub = subprocess.Popen(cmd, stdin=subprocess.PIPE, 
         stdout=output, stderr=output, encoding="utf-8")
     try:
-        out, _ = sub.communicate(input=input, timeout=30)
-    except TimeoutError:
+        out, _ = sub.communicate(input=input, timeout=TIMEOUT_SECOND)
+    except TimeoutExpired:
         sub.kill()
         logger.debug(f"{cmd} is killed because of TIMEOUTERROR")
-        out, _ = sub.communicate(input=input, timeout=30)
+        out = ""
     if raise_on_error and sub.returncode:
         logger.error(f"The output of running command: {out}")
         raise RuntimeError("%s returned %d" % (cmd, sub.returncode))

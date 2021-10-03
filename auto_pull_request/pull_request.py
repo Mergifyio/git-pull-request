@@ -110,7 +110,10 @@ class Remote:
         if not self.exist_repo_branches(self.repo_branch):
             return
 
-        self.git.fetch_branch(self.remote_name, self.local_branch)
+        try:
+            self.git.fetch_branch(self.remote_name, self.local_branch)
+        except TimeoutError:
+            logger.error(f"Git Fetching from {self.namehead} timed out. Skip It!")
         try:
             self.git.rebase(self.remote_branch, self.local_branch)
         except RuntimeError:
@@ -132,14 +135,14 @@ class Remote:
 
     def create_pr(self, fork_head_branch, content:PRContent):
         try:
-            logger.info(f"create pull from {fork_head_branch} to {self.remote_branch} of {self.repo.repo}")
+            logger.info(f"create pull from {fork_head_branch} to {self.namehead} of {self.repo.repo}")
             self.pr = self.gh_repo.create_pull(
                 base=self.repo_branch, head=fork_head_branch, title=content.title, body=content.body
             )
         except github.GithubException as e:
             logger.error(format_github_exception("create pull request", e))
             dead_for_resource()
-        logger.info("Pull-request created: %s", self.pr.html_url)
+        logger.info(f"Pull-request created: {self.pr.html_url}", )
         return self.pr
 
 
