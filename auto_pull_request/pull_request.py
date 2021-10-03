@@ -306,7 +306,7 @@ class Auto:
             self.upgrade_pr_info(pr)
 
     def create_pr(self):
-        self.target_remote.create_pr(head=self.fork_remote.repo_branch, content=self.content)
+        self.target_remote.create_pr(fork_head_branch=self.fork_remote.repo_branch, content=self.content)
 
     def fill_content(self):
         """If self.content has empty value, Get title and body summary for patches between 2 commits.
@@ -337,8 +337,3 @@ class Auto:
         if self.labels:
             pr.add_to_labels(*self.labels)
             logger.debug(f"Pull-request {pr.number} added labels %s", self.labels)
-
-
-    def exist_remote_branch(self):
-        pass
-        # git ls-remote --exit-code --heads git@github.com:user/repo.git branch-name

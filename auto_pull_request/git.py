@@ -161,9 +161,10 @@ class Git:
         with open(filename, "r") as body:
             return body.read().strip()
       
-    def editor_str(self, body: str = ""):
+    def editor_str(self, text: str = ""):
         with tempfile.NamedTemporaryFile() as temp_fp:
-            temp_fp.write(body.encode(encoding="utf-8"))
+            temp_fp.write(text.encode(encoding="utf-8"))
+            os.system(f"cat {temp_fp.name}")
             return self.run_editor(temp_fp.name)
         
 
