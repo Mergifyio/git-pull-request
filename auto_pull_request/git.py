@@ -134,9 +134,9 @@ class Git:
     def get_commit_body(self, commit):
         return _run_shell_command(["git", "show", "--format=%b", commit, "--"])
 
-    def get_commit_titles(self, begin, end):
+    def get_commit_titles(self, begin, end, format):
         return _run_shell_command(
-            ["git", "log", "--no-merges", "--format=%s", "%s..%s" % (begin, end)])
+            ["git", "log", "--no-merges", f"--format='{format}'", f"{begin}..{end}"])
 
     def get_formated_logs(self, begin, end):
         return _run_shell_command(
