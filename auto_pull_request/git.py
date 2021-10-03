@@ -23,7 +23,7 @@ def _run_shell_command(cmd: list[str], input: str =None, raise_on_error: bool=Tr
         logger.debug(f"{cmd} is killed because of TIMEOUTERROR")
         raise TimeoutError
     if raise_on_error and complete.returncode:
-        logger.error(f"command{complete.args}The output of running : {out}")
+        logger.error(f"Runned command: {complete.args}. The error output : {out}")
         raise RuntimeError("%s returned %d" % (new_cmd, complete.returncode))
     logger.debug(f"returned code of {new_cmd}: {complete.returncode}; output of that: {out}")
     return out.strip()
@@ -136,7 +136,7 @@ class Git:
 
     def get_commit_titles(self, begin, end, format):
         return _run_shell_command(
-            ["git", "log", "--no-merges", f"--format='{format}'", f"{begin}..{end}"])
+            ["git", "log", "--no-merges", f"--format=\"{format}\"", f"{begin}..{end}"])
 
     def get_formated_logs(self, begin, end):
         return _run_shell_command(
