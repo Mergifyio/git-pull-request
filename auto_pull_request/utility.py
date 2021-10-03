@@ -43,3 +43,14 @@ def dead_for_software():
 
 def quoted_str(text:str):
     return "\"" + text + "\""
+
+def assume_timeout_exception(func):
+    def try_solve_fun(*args, **kwargs):
+        try:
+            func(*args, **kwargs)
+        except TimeoutError as e:
+            logger.error("If command that solves https run too long, maybe it's a compute platform problem. "
+            "You can re-do to try again. Probably success.")
+            raise TimeoutError
+    
+    return try_solve_fun

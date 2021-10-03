@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 
 from subprocess import TimeoutExpired
-from auto_pull_request.utility import quoted_str
+from auto_pull_request.utility import quoted_str, assume_timeout_exception
 from loguru import logger
 
 
@@ -18,10 +18,13 @@ def _run_shell_command(cmd: list[str], input: str =None, raise_on_error: bool=Tr
     logger.debug(f"running '{new_cmd}' with input of '{input}'")
     out = ""
     try:
-        complete = subprocess.run(new_cmd, input=input, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True, encoding="utf-8")
+        complete = subprocess.run(
+            new_cmd, 
+            input=input, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, 
+            shell=True, encoding="utf-8", timeout=TIMEOUT_SECOND)
         out = complete.stdout
     except TimeoutExpired:
-        logger.debug(f"{cmd} is killed because of TIMEOUTERROR")
+        logger.debug(f"{cmd} is killed because of TIMEOUTERROR. The output of ")
         raise TimeoutError
     if raise_on_error and complete.returncode:
         logger.error(f"Runned command: {complete.args}. The error output : {out}")
@@ -193,7 +196,8 @@ class Git:
         if not url:
                 _run_shell_command(["git", "remote", "add", remote, url])
         logger.info(f"The config has been add. The the url of {remote} remote is {url}.")
-    
+
+    @assume_timeout_exception
     def fetch_branch(self, repo, branch):
         return _run_shell_command(["git", "fetch", repo, branch])
     
@@ -209,6 +213,7 @@ class Git:
             ["git", "rebase", upstream, branch]
         )
         
+    @assume_timeout_exception    
     def push(self, remote, source_branch, target_branch, set_upstream=False, ignore_error=False):
         flag = "-u" if set_upstream else ""
         return _run_shell_command(
@@ -226,3 +231,4 @@ class Git:
             return False
         return False
     
+
