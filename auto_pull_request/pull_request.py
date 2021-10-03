@@ -94,6 +94,8 @@ class Remote:
 
     def exist_repo_branches(self, branch):
         self.branches = self.gh_repo.get_branches()
+        logger.debug(f"The repo {self.user}:{self.repo.repo} has branches {self.branches}. "
+            f"And branch {branch}" + ("isn't" if branch in self.branches else "is") + " in remote repo.")
         return branch in self.branches
 
     def clear_local(self):
