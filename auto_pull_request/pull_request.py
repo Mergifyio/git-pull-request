@@ -253,8 +253,9 @@ class Auto:
 
     def get_local_remote(self, branch):
         remote_name = self.git.get_remote_for_branch(branch)
+        remote_url = self.git.get_remote_url(remote_name)
         return Remote(
-            repo =  RepositoryID(self.git.get_remote_url(remote_name)),
+            repo =  RepositoryID(remote_url) if remote_url else None ,
             remote_name = remote_name,
             repo_branch = self.git.get_remote_branch_for_branch(branch),
             local_branch = branch,

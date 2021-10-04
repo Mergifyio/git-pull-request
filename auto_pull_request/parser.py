@@ -44,15 +44,13 @@ from auto_pull_request import __version__
     "There options, target-url, target-remote and target-branch, usually needed when you cloned from your repository, or you want "
     "to custom a pull-request.\n"
     )
-@click.option("--fork-branch", "-b",
+@click.option("--fork-branch",
     help="The remote branch of fork repo from which we send a pull-request. Default value is auto-detected from .git/config. "
-    "There options, target-url, target-remote and target-branch, usually needed when you cloned from your repository, or you want "
-    "to custom a pull-request.\n"
     )
-@click.option("--fork-url", "-b",
+@click.option("--fork-url",
     help="The remote url of fork repo from which we send a pull-request. Default value is upsteam of the current branch. "
  )
-@click.option("--fork-remote", "-b",
+@click.option("--fork-remote",
     help="The remote name of fork repo from which we send a pull-request. Default value is upsteam name of the current branch."
  )
 @click.option("--title",
@@ -77,7 +75,7 @@ from auto_pull_request import __version__
     "If empty, we will promot in terminal to input corresponding infos.\n"
     "How to get you personal token? Please check this https://docs.github.com/en/authentication"
     "/keeping-your-account-and-data-secure/creating-a-personal-access-token")
-def main(debug, target_url, target_remote, target_branch, fork_branch, fork_url, fork_name, title, body, keep_message, labels, comment, skip_editor, token):
+def main(debug, target_url, target_remote, target_branch, fork_branch, fork_url, fork_remote, title, body, keep_message, labels, comment, skip_editor, token):
     log_info(debug)
     version_lint()
     Auto(
@@ -86,7 +84,7 @@ def main(debug, target_url, target_remote, target_branch, fork_branch, fork_url,
         target_branch=target_branch,
         fork_branch=fork_branch,
         fork_url=fork_url,
-        fork_name=fork_name,
+        fork_remote=fork_remote,
         title=title,
         body=body,
         comment=comment,
