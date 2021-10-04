@@ -10,7 +10,7 @@ from github.PullRequest import PullRequest
 from github.Repository import Repository 
 
 from auto_pull_request.content import PRContent
-from auto_pull_request.utility import dead_for_resource, dead_for_software, check_true_value_and_logger
+from auto_pull_request.utility import dead_for_resource, dead_for_software, check_true_value_and_logger,format_github_exception
 from auto_pull_request.git import Git 
 
 
@@ -269,24 +269,24 @@ class Auto:
         try:
             self.gh = github.Github(self.token)
         except UnknownObjectException as e:
-            logger.error(self._format_github_exception("login with the token", e))
+            logger.error(format_github_exception("login with the token", e))
             dead_for_resource()
         try:
             self.gh_user = self.gh.get_user()
         except UnknownObjectException as e:
-            logger.error(self._format_github_exception(f"get githut login user-{self.fork_remote.repo.user}", e))
+            logger.error(format_github_exception(f"get githut login user-{self.fork_remote.repo.user}", e))
             dead_for_resource()
         
         try:
             self.target_remote.gh_repo = self.gh.get_user(self.target_remote.repo.user).get_repo(self.target_remote.repo.repo) 
         except UnknownObjectException as e:
-            logger.error(self._format_github_exception(f"get github target repo with user \
+            logger.error(format_github_exception(f"get github target repo with user \
                 {self.target_remote.repo.user}/{self.target_remote.repo.repo} ", e))
             dead_for_resource()
         try:
             self.fork()
         except UnknownObjectException as e:
-            logger.info(self._format_github_exception(f"fork repository from {self.target_remote.repo.user}/{self.target_remote.repo.repo}", e))
+            logger.info(format_github_exception(f"fork repository from {self.target_remote.repo.user}/{self.target_remote.repo.repo}", e))
             dead_for_resource()
 
     def _get_pull_request_template(self):
@@ -354,7 +354,7 @@ class Auto:
                 base=self.target_remote.repo_branch, head=self.fork_remote.name_branch, title=self.content.title, body=self.content.body
             )
         except github.GithubException as e:
-            logger.error(self._format_github_exception("create pull request", e))
+            logger.error(format_github_exception("create pull request", e))
             dead_for_resource()
         logger.info("Pull-request created: %s", pr.html_url)
         return pr

@@ -342,7 +342,7 @@ class TestExceptionFormatting(unittest.TestCase):
             "Check "
             "https://developer.github.com/v3/pulls/#create-a-pull-request "
             "for more information.",
-            gpr._format_github_exception("create pull request", e),
+            gpr.format_github_exception("create pull request", e),
         )
 
     def test_no_message(self):
@@ -361,7 +361,7 @@ class TestExceptionFormatting(unittest.TestCase):
             "Check "
             "https://developer.github.com/v3/pulls/#create-a-pull-request "
             "for more information.",
-            gpr._format_github_exception("create pull request", e),
+            gpr.format_github_exception("create pull request", e),
         )
 
 
