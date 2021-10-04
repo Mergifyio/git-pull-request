@@ -9,6 +9,7 @@ authors = ["ruth-seven <1098057570@qq.com>"]
 enable = true
 vsc = "git"
 style = "semver"
+format = "{base}"
 
 [tool.poetry.dependencies]
 python = "^3.6"
