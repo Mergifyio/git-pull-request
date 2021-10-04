@@ -183,7 +183,7 @@ class Remote:
             dead_for_resource()
 
     def push(self, ignore_error=False, retry=3, timeout=45):
-        self.git.push(self.remote_name, self.local_branch, self.repo_branch, ignore_error=ignore_error, retry, timeout=timeout)
+        self.git.push(self.remote_name, self.local_branch, self.repo_branch, ignore_error=ignore_error, retry=retry, timeout=timeout)
     
     def __str__(self):
         return " ".join([item + ": \'" + str(self.__dict__[item]) + "\'"for item in self.__dict__ if item != "git"])
