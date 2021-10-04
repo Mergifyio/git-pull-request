@@ -4,6 +4,7 @@ import glob
 import json
 from loguru import logger
 from urllib import parse
+from enum import Enum, auto
 
 from github.GithubException import GithubException, UnknownObjectException
 from github.PullRequest import PullRequest 
@@ -18,7 +19,7 @@ class RepositoryID:
     """Generate host, user and repository name from url"""
 
     def __init__(self, url: str = ""):
-        self.url = url
+        self._url = url
         parsed = parse.urlparse(url)
         if parsed.scheme == "https": # not empty scheme usually is https
             path = parsed.path.strip()[1:]
@@ -55,9 +56,14 @@ class RepositoryID:
             and self.user.lower() == other.user.lower()
             and self.repo.lower() == other.repo.lower()
         )
-    
+
+    @property
     def https_url(self):
         return "/".join(["https:/", self.host, self.user, self.repo + ".git"])
+
+    @property
+    def ssh_url(self):
+        return "".join(["git@", self.host, ":", self.user, "/", self.repo + ".git"])
 
     def __str__(self):
         return str(self.__dict__)
@@ -70,12 +76,13 @@ class Remote:
         self.remote_branch is the local remote branch syncing with remote repository. Such as, "origin/master".
         self.user_branch: user for head branch of pull-request.
     """
-    def __init__(self, remote_name:str="", repo_branch:str="", local_branch:str="", repo:RepositoryID=None, git:Git=None, gh_repo:Repository=None, config=True):
+
+    def __init__(self, remote_name:str="", repo_branch:str="", local_branch:str="", repo:RepositoryID=None, git:Git=None, gh_repo:Repository=None, config=True, fork=False):
         self._gh_repo = None
         self._repo = None
-        self.remote_url = ""
         self.user = ""
         self.config = config
+        self.fork =fork
         # TODO0 set the value int git.config
         self.remote_name = remote_name
         self.repo_branch = repo_branch
@@ -97,30 +104,32 @@ class Remote:
             return
 
         self._gh_repo = new_gh_repo
-        self.remote_url  = self.remote_url or self._gh_repo.clone_url
-        
         self.repo = RepositoryID(self._gh_repo.clone_url)
-        
-        if self.config:
-            self.set_into_git()
-
+          
     @property
     def repo(self):
+        logger.info("repo")
         return self._repo
 
     @repo.setter
     def repo(self, new_repo:RepositoryID):
+        logger.info("repo.set")
         if not new_repo or self.repo:
             assert self.repo == new_repo, "Errors, origin: {self.repo}  != repo_from_gh: {repo} "
             return 
+        logger.info(f"repo.set{new_repo}")
         self._repo = new_repo
         self.user = self._repo.user
-        self.remote_url = self.remote_url or new_repo.https_url()  #TODO use https or ssh url.
         self.remote_name =  self.remote_name or new_repo.user
+        
+        if self.config:
+            self.set_into_git()
 
     def addRemote(self, other:"Remote"):
+        white_list = ["user", "remote_name", "repo_branch", "local_branch", "git", "repo", "gh_repo"]
         for attr in other.__dict__:
-            self.__dict__[attr] =  self.__dict__[attr] or other.__dict__[attr]
+            if attr in white_list:
+                self.__dict__[attr] =  self.__dict__[attr] or other.__dict__[attr]
 
     @property
     def remote_branch(self):
@@ -132,7 +141,7 @@ class Remote:
 
     def check_integrity(self, name="Remote"):
         try:
-            skip_list = ["config"]
+            skip_list = ["config", "fork"]
             for attr in self.__dict__ :
                 if not self.__dict__[attr] and attr not in skip_list:
                     raise ValueError(f"During checking the integrity of {name}, "
@@ -143,7 +152,7 @@ class Remote:
 
     #todo set move ?
     def set_into_git(self):
-        self.git.add_remote_ulr(self.repo.user, self.remote_url)
+        self.git.add_remote_ulr(self.repo.user, self.repo.ssh_url if self.fork else self.repo.https_url)
         
     #todo  create instance from git config?
     @classmethod
@@ -215,38 +224,42 @@ class Auto:
         self.skip_editor = skip_editor
         self.token = token
 
-        self.local_remote_is_fork = True if target_url else False # The rightness is dependent on the user.
+        self.local_remote_kind = self.get_local_remote_category(target_url, fork_url )# The rightness is dependent on the user.
         # accpet option parameters and basic info
         self.target_remote = Remote(
             git = self.git,
             repo = RepositoryID(target_url) if target_url else None, 
             remote_name = target_remote, 
             repo_branch = target_branch,
+            fork=False,
         )
         self.fork_remote = Remote(
             git = self.git,
             repo_branch = fork_branch,
             repo = RepositoryID(fork_url) if fork_url else None,
             remote_name = fork_remote,
+            fork=True
         )
-        # accept local parameters
+        logger.info(f"accepted option parameters. \ntarget_remote: {self.target_remote}\nfork_remote: {self.fork_remote}\n")
+        
         branch = self.git.get_branch_name()
         self.local_remote = self.get_local_remote(branch)
-        if self.local_remote_is_fork:
+        if self.local_remote_kind == self.info_category.fork:
             self.fork_remote.addRemote(self.local_remote)
-            self.target_remote.local_branch = branch
-        else:
+        elif self.local_remote_kind == self.info_category.target:
             self.target_remote.addRemote(self.local_remote)
-            self.fork_remote.local_branch = branch
-        # accept github paramters
+        else:
+            pass
+        self.target_remote.local_branch = branch
+        self.fork_remote.local_branch = branch
+        logger.info(f"accepted local paramters. \ninfo_category:{self.local_remote_kind} \ntarget_remote: {self.target_remote} \nfork_remote: {self.fork_remote}\n")
+        
         self._init_github()
         self._init_credential()
-        logger.info(f"target_remote info: {self.target_remote}")
-        logger.info(f"fork_remote info: {self.fork_remote}")
-        # check
+        logger.info(f"accepted remote paramters. \ntarget_remote: {self.target_remote}\nfork_remote: {self.fork_remote}\n")
+        
         self.target_remote.check_integrity("target_remote")
         self.fork_remote.check_integrity("fork_remote")
-
         if self.fork_remote.repo == self.target_remote.repo:
             logger.error(f"Detect the remote target repo is the forked repository, which is {self.fork_remote.remote_url}. Please assigned --target-remote, --target-url with options.")
             dead_for_resource()
@@ -256,10 +269,12 @@ class Auto:
         remote_name = self.git.get_remote_for_branch(branch)
         remote_url = self.git.get_remote_url(remote_name)
         return Remote(
+            git = self.git,
             repo =  RepositoryID(remote_url) if remote_url else None ,
             remote_name = remote_name,
             repo_branch = self.git.get_remote_branch_for_branch(branch),
             local_branch = branch,
+            config=False,
         )
         
     def _init_credential(self):
@@ -397,3 +412,15 @@ class Auto:
             logger.debug(f"Pull-request {pr.number} added labels \"{self.labels}\"", )
 
         logger.success(f"Success to update pr in {pr.html_url}")
+
+    class info_category(Enum):
+            fork = auto()
+            target = auto()
+            none = auto()
+
+    def get_local_remote_category(self, target_url, fork_url):
+        if target_url and fork_url:
+            return self.info_category.none
+        if target_url:
+            return self.info_category.fork
+        return self.info_category.target
