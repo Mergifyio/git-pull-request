@@ -197,6 +197,8 @@ class Auto:
         target_remote="",
         target_branch="",
         fork_branch="",
+        fork_url="",
+        fork_remote="",
         title="",
         body="",
         keep_message=None,
@@ -222,7 +224,9 @@ class Auto:
         )
         self.fork_remote = Remote(
             git = self.git,
-            repo_branch = fork_branch
+            repo_branch = fork_branch,
+            repo = RepositoryID(fork_url) if fork_url else None,
+            remote_name = fork_remote,
         )
         # accept local parameters
         branch = self.git.get_branch_name()
