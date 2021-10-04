@@ -12,21 +12,22 @@ from loguru import logger
 SHORT_HASH_LEN = 5
 TIMEOUT_SECOND = 30
 
-def _run_shell_command(cmd, input: str =None, raise_on_error: bool=True) -> str:
+def _run_shell_command(cmd, input: str =None, raise_on_error: bool=True, timeout=TIMEOUT_SECOND, retry=1) -> str:
     assert type(cmd) == list and type(cmd[0]) == str
     new_cmd = " ".join(list(filter((lambda x: x), cmd)))
     
     logger.debug(f"running '{new_cmd}' with input of '{input}'")
     out = ""
-    try:
-        complete = subprocess.run(
-            new_cmd, 
-            input=input, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, 
-            shell=True, encoding="utf-8", timeout=TIMEOUT_SECOND)
-        out = complete.stdout
-    except TimeoutExpired:
-        logger.debug(f"{cmd} is killed because of TIMEOUTERROR. The output of ")
-        raise TimeoutError
+    for _ in range(retry):
+        try:
+            complete = subprocess.run(
+                new_cmd, 
+                input=input, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, 
+                shell=True, encoding="utf-8", timeout=timeout)
+            out = complete.stdout
+        except TimeoutExpired:
+            logger.debug(f"{cmd} is killed because of TIMEOUTERROR. The output of ")
+            raise TimeoutError
     if raise_on_error and complete.returncode:
         logger.error(f"Runned command: {complete.args}. The error output : {out}")
         raise RuntimeError("%s returned %d" % (new_cmd, complete.returncode))
@@ -150,7 +151,7 @@ class Git:
         return  f"Pull request for commit after commit \
             {self.get_object_rsa(head1)[:SHORT_HASH_LEN]} and before {self.get_object_rsa(head2)[:SHORT_HASH_LEN]}"
     
-    def get_formated_body_from_scratch(self, head):
+    def get_formated_body_from_scratch(self):
         return _run_shell_command(["git", "rev-list", "HEAD", "--format="+self.commit_format["log"]])
 
     def get_object_rsa(self, obj):
