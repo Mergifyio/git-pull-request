@@ -31,7 +31,7 @@ def _run_shell_command(cmd, input: str =None, raise_on_error: bool=True) -> str:
         logger.error(f"Runned command: {complete.args}. The error output : {out}")
         raise RuntimeError("%s returned %d" % (new_cmd, complete.returncode))
     logger.debug(f"returned code of {new_cmd}: {complete.returncode}; output of that: {out}")
-    return out.strip()
+    return out.strip(" \t\n")
 
     
 class Git: 
@@ -203,9 +203,9 @@ class Git:
             raise RuntimeError(f"Unable create new branch {branch} from branch {base_branch}")
     
     def add_remote_ulr(self, remote, url):
-        url = _run_shell_command(["git", "remote", "get-url", remote])
-        if not url:
-                _run_shell_command(["git", "remote", "add", remote, url])
+        out = _run_shell_command(["git", "remote", "get-url", remote], raise_on_error= True)
+        if  out != url: 
+            _run_shell_command(["git", "remote", "add", remote, url])
         logger.info(f"The config has been add. The the url of {remote} remote is {url}.")
 
     @stop_timeout_exception
