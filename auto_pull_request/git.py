@@ -203,7 +203,7 @@ class Git:
             raise RuntimeError(f"Unable create new branch {branch} from branch {base_branch}")
     
     def add_remote_ulr(self, remote, url):
-        out = _run_shell_command(["git", "remote", "get-url", remote], raise_on_error= True)
+        out = _run_shell_command(["git", "remote", "get-url", remote], raise_on_error= False)
         if  out != url: 
             _run_shell_command(["git", "remote", "add", remote, url])
         logger.info(f"The config has been add. The the url of {remote} remote is {url}.")
