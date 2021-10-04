@@ -68,7 +68,7 @@ class Remote:
 
         self.remote_name is local remote name in git.config
         self.remote_branch is the local remote branch syncing with remote repository. Such as, "origin/master".
-        self.name_branch: user for head branch of pull-request.
+        self.user_branch: user for head branch of pull-request.
     """
     def __init__(self, remote_name:str="", repo_branch:str="", local_branch:str="", repo:RepositoryID=None, git:Git=None, gh_repo:Repository=None, config=False):
         self._gh_repo = None
@@ -341,7 +341,7 @@ class Auto:
 
     def push_pr(self):
         self.fill_content()
-        pulls = list(self.target_remote.gh_repo.get_pulls(base=self.target_remote.repo_branch, head=self.fork_remote.name_branch))
+        pulls = list(self.target_remote.gh_repo.get_pulls(base=self.target_remote.repo_branch, head=self.fork_remote.user_branch))
         if not pulls:
             pr = self.create_pr()
         else:
@@ -353,12 +353,12 @@ class Auto:
     def create_pr(self):
         try:
             pr = self.target_remote.gh_repo.create_pull(
-                base=self.target_remote.repo_branch, head=self.fork_remote.name_branch, title=self.content.title, body=self.content.body
+                base=self.target_remote.repo_branch, head=self.fork_remote.user_branch, title=self.content.title, body=self.content.body
             )
         except github.GithubException as e:
             logger.error(format_github_exception(
                 f"create pull request with base={self.target_remote.repo_branch} "
-                f"and head={self.fork_remote.name_branch}", e))
+                f"and head={self.fork_remote.user_branch}", e))
             dead_for_resource()
         logger.info(f"Pull-request created: {pr.html_url}")
         return pr
