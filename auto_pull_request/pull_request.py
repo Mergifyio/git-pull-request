@@ -327,18 +327,16 @@ class Auto:
         logger.success(f"Forked repository: {self.fork_remote.gh_repo.clone_url}", )
         
     def run(self):
-        self.update()
         self.sync()
+        self.push_pr()
         logger.info("Done~ ^_^")
 
-    def update(self):
+    def sync(self):
         self.target_remote.pull()
         self.fork_remote.pull()
-        self.fork_remote.push(ignore_error=True)
-
-    def sync(self):
-        self.push_pr()
-
+        self.fork_remote.push(ignore_error=False)
+        logger.success("Syncing remote and local repositories successes😄")
+    
     def push_pr(self):
         self.fill_content()
         pulls = list(self.target_remote.gh_repo.get_pulls(base=self.target_remote.repo_branch, head=self.fork_remote.user_branch))
