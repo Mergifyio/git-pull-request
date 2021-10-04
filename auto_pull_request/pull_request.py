@@ -354,9 +354,11 @@ class Auto:
                 base=self.target_remote.repo_branch, head=self.fork_remote.name_branch, title=self.content.title, body=self.content.body
             )
         except github.GithubException as e:
-            logger.error(format_github_exception("create pull request", e))
+            logger.error(format_github_exception(
+                f"create pull request with base={self.target_remote.repo_branch} "
+                f"and head={self.fork_remote.name_branch}", e))
             dead_for_resource()
-        logger.info("Pull-request created: %s", pr.html_url)
+        logger.info(f"Pull-request created: {pr.html_url}")
         return pr
 
     def fill_content(self):
