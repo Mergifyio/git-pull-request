@@ -360,7 +360,7 @@ class Auto:
                 f"create pull request with base={self.target_remote.repo_branch} "
                 f"and head={self.fork_remote.user_branch}", e))
             dead_for_resource()
-        logger.info(f"Pull-request created: {pr.html_url}")
+        logger.success(f"Pull-request created: {pr.html_url}")
         return pr
 
     def fill_content(self):
@@ -391,3 +391,5 @@ class Auto:
         if self.labels:
             pr.add_to_labels(*self.labels)
             logger.debug(f"Pull-request {pr.number} added labels %s", self.labels)
+
+        logger.success(f"Success to update pr in {pr.html_url}")
