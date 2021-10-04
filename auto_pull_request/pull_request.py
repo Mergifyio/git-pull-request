@@ -9,6 +9,7 @@ from urllib import parse
 
 from github.GithubException import GithubException, UnknownObjectException
 from github.PullRequest import PullRequest 
+from github.Repository import Repository 
 
 from auto_pull_request.content import PRContent
 from auto_pull_request.utility import dead_for_resource, dead_for_software, check_true_value_and_logger
@@ -63,36 +64,57 @@ class RepositoryID:
 class Remote:
     """the object control github repo, corresponding local git remote config
 
+        self.remote_name is local remote name in git.config
         self.remote_branch is the local remote branch syncing with remote repository. Such as, "origin/master".
         self.name_branch: user for head branch of pull-request.
     """
-    def __init__(self, git:Git, repo:RepositoryID, remote_name:str, repo_branch:str, local_branch:str, gh_repo):
-        self.git = git
-        self.repo = repo
-        self.user = repo.user
+    def __init__(self, remote_name:str="", repo_branch:str="", local_branch:str="", repo:RepositoryID=None, git:Git=None, config=False):
+        # TODO0 set the value int git.config
         self.remote_name = remote_name
-        self.remote_url = repo.https_url() #TODO use https or ssh url.
         self.repo_branch = repo_branch
         self.local_branch = local_branch
-        self.gh_repo = gh_repo
-        # TODO0 set the value int git.config
+        
+        self.git = git
+        self.repo = repo
+        if self.repo:
+            self.user = repo.user
+            self.remote_url =repo.https_url()  #TODO use https or ssh url.
+        if config:
+            self.set_into_git()
+        
+    def set_gh_repo(self, gh_repo:Repository):
+        if not self.gh_repo:
+            self.gh_repo = gh_repo
 
-        self.set_into_git()
+    def set_repo(self, repo:Repository):
+        if not self.repo:
+            self.repo = repo
+        elif self.repo != repo:
+            raise RuntimeError("Can't assign different repo to a Remote with  self.repo:{self.repo} and assigner repo:{repo}")
+
+
+    def addRemote(self, other:"Remote"):
+        for attr in other.__dict__:
+            self.__dict__[attr] =  self.__dict__[attr] or other.__dict__[attr]
 
     @property
     def remote_branch(self):
         return "/".join([self.remote_name, self.repo_branch])
-
-            
+    
     @property
     def name_branch(self):
         return ":".join([self.remote_name, self.repo_branch])
+
+    def check_integrity(self, name="Remote"):
+        for attr in self.__dict__:
+            if not self.__dict__[attr]:
+                raise(f"During checking the integrity of {name}, found the {attr} is empty.")
 
     #todo set move ?
     def set_into_git(self):
         self.git.add_remote_ulr(self.user, self.remote_url)
         
-    #todo  create instance from more data?
+    #todo  create instance from git config?
     @classmethod
     def create_from_git(self):
         pass
@@ -131,13 +153,13 @@ class Remote:
 class Auto:
     """ 
         Main Vars:
-        self.target_repo: the self.git.Repository entity of source repository. And self.target_repo.repo also set to the git remote name.
-        self.fork_repo: the self.git.Repository fork entity from self.target_repo. And self.fork_repo.repo also set to the git remote fork name.
-        self.target_branch: branch names of self.fork_repo and self.target corresponding self.local_branch. AKA, the remote branch. such as "master"
+        self.target_url: most important url to assign remote target repository. If don't provided, we will auto choose local remote from current branch.
+        self.target_remote: the Remote of source repository.
+        self.fork_remote: the Remote of fork from target repo. And self.fork_remote.repo also set to the git remote fork name.
+        self.target_branch: the branch name of self.target_remote corresponding self.local_branch. AKA, the remote branch. such as "master"
+        self.fork_branch: the branch name of self.fork_remote corresponding self.local_branch.
         self.local_branch: local branch which will be synced to remote sources, included the source repository and forked repository by push and pull-request.
         self.gh_*: the * object from Github package
-        #self.pr_base_branch: the local remote branch referring self.target_branch of self.fork_repo, such as "remote/Seven/master". Yes, the basic #formula: remote/{$targe_repo}/{$target_branch}
-        #self.pr_head_branch: the local remote branch referring self.target_branch of self.target_repo, such as "remote/Github/master".
     """
     def __init__(self,
         target_url="",
@@ -158,70 +180,56 @@ class Auto:
         self.labels = labels
         self.skip_editor = skip_editor
         self.token = token
-        self.target_url = target_url
-        self.target_remote_name = target_remote
-        self.target_branch = target_branch
-        self.fork_branch = fork_branch
-        self.user = ""
 
-        self.local_branch = True if not self.target_url else False # The rightness is dependent of the user.
-
-        self._init_basic_info()
+        self.local_remote_is_fork = True if target_url else False # The rightness is dependent on the user.
+        # accpet option parameters
+        self.target_remote = Remote(
+            repo = Repository(target_url), 
+            remote_name = target_remote, 
+            repo_branch = target_branch,
+        )
+        self.fork_remote = Remote(
+            fork_branch = fork_branch
+        )
+        # accept local parameters
+        self.local_remote = self.get_local_remote()
+        if self.local_remote_is_fork:
+            self.fork_remote.addRemote(self.local_remote)
+        else:
+            self.target_remote.addRemote(self.local_remote)
+        # accept github paramters
         self._init_github()
         self._init_credential()
 
-        self.target_remote = Remote(
-            git = self.git,
-            repo = self.target_repo_id, 
-            remote_name = self.target_remote_name, 
-            repo_branch = self.target_branch, 
-            local_branch=self.local_branch,
-            gh_repo=self.gh_target_repo,
-        )
-        self.fork_remote = Remote(
-            git = self.git,
-            repo =  RepositoryID(self.gh_fork_repo.clone_url),
-            remote_name = self.gh_user.login,
-            repo_branch = self.fork_branch, #TODO costume repo_branch;...
-            local_branch= self.local_branch,
-            gh_repo=self.gh_fork_repo,
-        )
+        self.target_remote.check_integrity("target_remote")
+        self.fork_remote.check_integrity("fork_remote")
         if self.fork_remote.repo == self.target_remote.repo:
             logger.error(f"Detect the remote target repo is the forked repository, which is {self.fork_remote.remote_url}. Please assigned --target-remote, --target-url with options.")
             dead_for_resource()
         logger.success("The Initialization completed-_^")
-        
-    def _init_basic_info(self):
-        try:
-            self.local_branch = self.git.get_branch_name()
-            self.target_branch = self.target_branch or self.git.get_remote_branch_for_branch(self.local_branch) # TODO set upstream ref and remote config
-            self.target_remote_name = self.target_remote_name or self.git.get_remote_for_branch(self.local_branch)
-            self.target_url = self.target_url or self.git.get_remote_url(self.target_remote_name)
-        except RuntimeError as e:
-            logger.error(f"Initialization of basic info fails: {e}")
-            dead_for_resource()
-        check_true_value_and_logger(self.local_branch, "Unable find current branch", os.EX_UNAVAILABLE)
-        check_true_value_and_logger(self.target_branch, "Unable find remote target branch", os.EX_UNAVAILABLE)
-        check_true_value_and_logger(self.target_remote_name, "Unable find remote value", os.EX_UNAVAILABLE)
-        check_true_value_and_logger(self.target_url, "Unable find remote url", os.EX_UNAVAILABLE)
-        
-        self.target_repo_id =RepositoryID(self.target_url)
-        self.host = self.target_repo_id.host
 
-        logger.success(f"Basic Info: Remote: {self.target_remote_name} Remote URL: {self.target_url}. "
-             + f"Remote branch: {self.target_branch} Local Branch: {self.local_branch}")
+    def get_local_remote(self):
+        branch = self.git.get_branch_name()
+        return Remote(
+            git = self.git,
+            repo =  RepositoryID(self.git.get_remote_url(branch)),
+            remote_name = self.git.get_remote_for_branch(branch),
+            repo_branch = self.git.get_remote_branch_for_branch(branch),
+            local_branch = branch,
+        )
         
-
     def _init_credential(self):
         if not self.token:
-            self.token = self.git.get_login_password()
-            check_true_value_and_logger(self.token, f"Unable to find your token of {self.git.host}. "
+            self.username, self.token = self.git.get_login_password()
+            check_true_value_and_logger(self.token, f"Unable to find your token of {self.fork_remote.repo.host}. "
                 "Make sure you have a git credential working.", os.EX_UNAVAILABLE)
         else:
-            self.git.approve_login_password(host=self.host, user=self.user, password=self.token) #TODO hide debug info of the token
-        logger.info(f"Found user: {self.user} password: <redacted> in host {self.git.host}")
+            self.git.approve_login_password(host=self.fork_remote.repo.host, user=self.fork_remote.repo.user, password=self.token) #TODO hide debug info of the token
+        logger.info(f"Found user: {self.fork_remote.repo.user} password: <redacted> in host {self.fork_remote.repo.host}")
 
     def _init_github(self):
+        assert self.target_remote.repo, "target repo must not empty"
+        
         try:
             self.gh = github.Github(self.token)
         except UnknownObjectException as e:
@@ -230,20 +238,19 @@ class Auto:
         try:
             self.gh_user = self.gh.get_user()
         except UnknownObjectException as e:
-            logger.error(self._format_github_exception(f"get githut login user-{self.user}", e))
+            logger.error(self._format_github_exception(f"get githut login user-{self.fork_remote.repo.user}", e))
             dead_for_resource()
-        self.user = self.gh_user.login
         
         try:
-            self.gh_target_repo = self.gh.get_user(self.target_repo_id.user).get_repo(self.target_repo_id.repo)    
+            self.target_remote.set_gh_repo(self.gh.get_user(self.target_remote.repo.user).get_repo(self.target_remote.repo.repo))   
         except UnknownObjectException as e:
             logger.error(self._format_github_exception(f"get github target repo with user \
-                {self.target_repo_id.user} and repo {self.target_repo_id.repo}", e))
+                {self.target_remote.repo.user}/{self.target_remote.repo.repo} ", e))
             dead_for_resource()
         try:
             self.fork()
         except UnknownObjectException as e:
-            logger.info(self._format_github_exception(f"fork repository {self.user}/{self.target_repo_id.repo}", e))
+            logger.info(self._format_github_exception(f"fork repository from {self.target_remote.repo.user}/{self.target_remote.repo.repo}", e))
             dead_for_resource()
 
     def _get_pull_request_template(self):
@@ -268,18 +275,18 @@ class Auto:
                         return t.read()
 
     def fork(self):
-        """run fork() forcedly every time"""
+        """run fork forcedly every time"""
         try:
-            self.gh_fork_repo = self.gh_target_repo.create_fork()
+            self.fork_remote.set_gh_repo(self.target_remote.gh_repo.create_fork())
         except GithubException as e:
             if  e.status == 403\
                 and "forking is disabled" in e.data["message"]:
                 logger.error("Forking is disabled on target repository.")
                 dead_for_resource()
         
-        assert self.gh_fork_repo and self.gh_fork_repo.clone_url, "fork repo should not empty"
+        assert self.fork_remote.repo and self.fork_remote.gh_repo, "fork repo should not empty"
 
-        logger.success(f"Forked repository: {self.gh_fork_repo.clone_url}", )
+        logger.success(f"Forked repository: {self.fork_remote.gh_repo.clone_url}", )
         
     def run(self):
         self.update()
@@ -296,7 +303,7 @@ class Auto:
 
     def push_pr(self):
         self.fill_content()
-        pulls = list(self.gh_target_repo.get_pulls(base=self.target_remote.repo_branch, head=self.fork_remote.name_branch))
+        pulls = list(self.target_remote.gh_repo.get_pulls(base=self.target_remote.repo_branch, head=self.fork_remote.name_branch))
         if not pulls:
             pr = self.create_pr()
         else:
@@ -307,7 +314,7 @@ class Auto:
 
     def create_pr(self):
         try:
-            pr = self.gh_target_repo.create_pull(
+            pr = self.target_remote.gh_repo.create_pull(
                 base=self.target_remote.repo_branch, head=self.fork_remote.name_branch, title=self.content.title, body=self.content.body
             )
         except github.GithubException as e:
@@ -339,25 +346,8 @@ class Auto:
             logger.debug("Updated pull-request title and body")
             
         if self.comment:
-            self.gh_target_repo.get_issue(pr.number).create_comment(self.comment)
+            self.target_remote.gh_repo.get_issue(pr.number).create_comment(self.comment)
             logger.debug(f'Pull-request {pr.number} Commented: "%s"', self.comment)
         if self.labels:
             pr.add_to_labels(*self.labels)
             logger.debug(f"Pull-request {pr.number} added labels %s", self.labels)
-
-    @staticmethod
-    def _format_github_exception(action:str , e: GithubException):
-        url = e.data.get("documentation_url", "GitHub documentation")
-        errors_msg = "\n".join(
-            error.get("message", "") for error in e.data.get("errors", {}) # type: ignore
-        )
-        return (
-            "Unable to %s: %s (%s)\n"
-            "%s\n"
-            "Check %s for more information."
-            % (action, e.data.get("message"), e.status, errors_msg, url)
-        )
-
-    def exist_remote_branch(self):
-        pass
-        # git ls-remote --exit-code --heads git@github.com:user/repo.git branch-name
