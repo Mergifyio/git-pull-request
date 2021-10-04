@@ -46,7 +46,10 @@ class Git:
             "log": "Date:%ci; Author: %an; Commit: %h %n %s%n", 
             "markdown": "## Date:%ci; Author: %an; Commit: %h %n %s%n"
         }
-    
+        
+    def __str__(self):
+        return str(self.__dict__)
+
     class git_conf:
         
         def get_pr_config(self, pr_subfix, default=None):
