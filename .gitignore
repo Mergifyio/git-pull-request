@@ -6,3 +6,8 @@ dist/
 *.egg-info
 *.pyc
 ChangeLog
+
+.vscode
+
+build
+.mypy_cache
