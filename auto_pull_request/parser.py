@@ -34,13 +34,13 @@ from auto_pull_request.pull_request import Auto
     "For example, you can check you target url by \"git config --get \"remote.origin.url\"\""
     )
 @click.option("--target-remote", "-r",
-    help="The remote name of the target repo to send a pull-request to. Default is auto-detected from .git/config. "
+    help="The remote name of the target repo int local git, to which we send a pull-request. Default is auto-detected from .git/config. "
     "There options, target-url, target-remote and target-branch, only needed when you cloned from your repository, or you want "
     "to create a pull-request to another repository.\n"
     "As a example, target-remote of a cloned repository from other other people ususally is \"origin\"."
     )
 @click.option("--target-branch", "-b",
-    help="The remote branch of target branch to which we send a pull-request. Default value is auto-detected from .git/config. "
+    help="The remote branch of target branch in local git, to which we send a pull-request. Default value is auto-detected from .git/config. "
     "There options, target-url, target-remote and target-branch, usually needed when you cloned from your repository, or you want "
     "to custom a pull-request.\n"
     )
@@ -57,12 +57,11 @@ from auto_pull_request.pull_request import Auto
     "--comment", 
     help="Comment to publish when updating the pull-request")
 @click.option(
-    "--keep-message",
+    "--keep-message/--update-message", default=False, show_default=True,
     help="For a existing pull-request, Don't open an editor to change the pull request body.",
     )
 @click.option(
-    "--skip-editor",
-    type=str,
+    "--skip-editor/--open-editor", default=False, show_default=True,
     help="If not empty, use parameter of --title and --message instead of " 
     "opening edition for pull-requester content.")
 @click.option("--labels", "-l",
