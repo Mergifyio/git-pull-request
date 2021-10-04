@@ -4,7 +4,6 @@ import re
 import subprocess
 import tempfile
 
-from typing import list
 from subprocess import TimeoutExpired
 from auto_pull_request.utility import quoted_str, stop_timeout_exception
 from loguru import logger

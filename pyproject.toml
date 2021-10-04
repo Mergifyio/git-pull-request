@@ -22,7 +22,7 @@ poetry-dynamic-versioning = "0.13.1"
 [tool.poetry.dev-dependencies]
 
 [tool.poetry.scripts]
-auto-pull-request = 'auto_pull_request.parser:main'
+apr = 'auto_pull_request.parser:main'
 
 [tool.poetry-dynamic-versioning.substitution]
 files = ["auto_pull_request/__init__.py"]
