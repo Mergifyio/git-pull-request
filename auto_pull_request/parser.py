@@ -20,7 +20,7 @@ import click
 from loguru import logger
 
 from auto_pull_request.pull_request import Auto
-from auto_pull_request import version
+from auto_pull_request import __version__
 
 # Creates a GitHub pull-request.
 @click.command("pull-request")
@@ -94,4 +94,4 @@ def log_info(debug):
     logger.add(sys.stderr, level=level)
     
 def version_lint():
-    logger.success(f"Auto-Pull-Request ⭐️{version}")
+    logger.success(f"Auto-Pull-Request ⭐️{__version__}")

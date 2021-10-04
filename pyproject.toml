@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "auto-pull-request"
 description = ""
-version = "0.0.0"
+version = "v0.0.0"
 authors = ["ruth-seven <1098057570@qq.com>"]
 
 
@@ -23,8 +23,8 @@ poetry-dynamic-versioning = "0.13.1"
 [tool.poetry.scripts]
 auto_pull_request = 'auto_pull_request.parser:main'
 
-[tool.poetry-dynamic-versioning.substitution]
-files = ["auto_pull_request/__init__.py"]
+# [tool.poetry-dynamic-versioning.substitution]
+# files = ["auto_pull_request/__init__.py"]
 
 
 [build-system]

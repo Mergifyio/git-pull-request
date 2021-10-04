@@ -1,3 +1,4 @@
 
 
-version = "0.0.0" # type: ignore
+__version__ = "0.0.0" # dynamical version support
+
