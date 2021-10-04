@@ -387,9 +387,9 @@ class Auto:
             
         if self.comment:
             self.target_remote.gh_repo.get_issue(pr.number).create_comment(self.comment)
-            logger.debug(f'Pull-request {pr.number} Commented: "%s"', self.comment)
+            logger.debug(f'Pull-request {pr.number} Commented: "{self.comment}"', )
         if self.labels:
             pr.add_to_labels(*self.labels)
-            logger.debug(f"Pull-request {pr.number} added labels %s", self.labels)
+            logger.debug(f"Pull-request {pr.number} added labels \"{self.labels}\"", )
 
         logger.success(f"Success to update pr in {pr.html_url}")
