@@ -4,6 +4,7 @@ import re
 import subprocess
 import tempfile
 
+from typing import list
 from subprocess import TimeoutExpired
 from auto_pull_request.utility import quoted_str, stop_timeout_exception
 from loguru import logger
@@ -12,7 +13,8 @@ from loguru import logger
 SHORT_HASH_LEN = 5
 TIMEOUT_SECOND = 30
 
-def _run_shell_command(cmd: list[str], input: str =None, raise_on_error: bool=True) -> str:
+def _run_shell_command(cmd, input: str =None, raise_on_error: bool=True) -> str:
+    assert type(cmd) == list and type(cmd[0]) == str
     new_cmd = " ".join(list(filter((lambda x: x), cmd)))
     
     logger.debug(f"running '{new_cmd}' with input of '{input}'")
