@@ -74,6 +74,7 @@ class Remote:
         self._gh_repo = None
         self._repo = None
         self.remote_url = ""
+        self.user = ""
         self.config = config
         # TODO0 set the value int git.config
         self.remote_name = remote_name
@@ -112,6 +113,7 @@ class Remote:
             assert self.repo == new_repo, "Errors, origin: {self.repo}  != repo_from_gh: {repo} "
             return 
         self._repo = new_repo
+        self.user = self._repo.user
         self.remote_url = self.remote_url or new_repo.https_url()  #TODO use https or ssh url.
         self.remote_name =  self.remote_name or new_repo.user
 
@@ -124,8 +126,8 @@ class Remote:
         return "/".join([self.remote_name, self.repo_branch])
     
     @property
-    def name_branch(self):
-        return ":".join([self.remote_name, self.repo_branch])
+    def user_branch(self):
+        return ":".join([self.user, self.repo_branch])
 
     def check_integrity(self, name="Remote"):
         try:
