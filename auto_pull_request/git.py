@@ -145,11 +145,14 @@ class Git:
     def get_commit_titles(self, begin, end, format):
         return _run_shell_command(
             ["git", "log", "--no-merges", f"--format="+quoted_str(format), f"{begin}..{end}"])
-
+    
     def get_formated_title(self, head1, head2):
         return  f"Pull request for commit after commit \
             {self.get_object_rsa(head1)[:SHORT_HASH_LEN]} and before {self.get_object_rsa(head2)[:SHORT_HASH_LEN]}"
     
+    def get_formated_body_from_scratch(self, head):
+        return _run_shell_command(["git", "rev-list", "HEAD", "--format="+self.commit_format["log"]])
+
     def get_object_rsa(self, obj):
         return _run_shell_command(["git", "rev-parse", obj])
 

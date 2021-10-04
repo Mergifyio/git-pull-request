@@ -116,7 +116,6 @@ class Remote:
         if not new_repo or self.repo:
             assert self.repo == new_repo, "Errors, origin: {self.repo}  != repo_from_gh: {repo} "
             return 
-        logger.info(f"repo.set{new_repo}")
         self._repo = new_repo
         self.user = self._repo.user
         self.remote_name =  self.remote_name or new_repo.user
@@ -386,9 +385,13 @@ class Auto:
         """
         if self.content:
             return
+        if self.target_remote.on_local:
+            title = self.git.get_formated_title(self.target_remote.repo_branch, self.target_remote.local_branch)
+            body = self.git.get_formated_logs(self.target_remote.repo_branch, self.target_remote.local_branch)
+        else:
+            title = "This the first title of pull-request "
+            body = self.git.get_formated_body_from_scratch()
 
-        title = self.git.get_formated_title(self.target_remote.repo_branch, self.target_remote.local_branch)
-        body = self.git.get_formated_logs(self.target_remote.repo_branch, self.target_remote.local_branch)
         if not self.skip_editor:
             edited = self.git.editor_str(str(PRContent(title, body)))
             self.content.fill_empty(PRContent(content=edited))
