@@ -68,7 +68,7 @@ class Remote:
         self.remote_branch is the local remote branch syncing with remote repository. Such as, "origin/master".
         self.name_branch: user for head branch of pull-request.
     """
-    def __init__(self, remote_name:str="", repo_branch:str="", local_branch:str="", repo:RepositoryID=None, git:Git=None, config=False):
+    def __init__(self, remote_name:str="", repo_branch:str="", local_branch:str="", repo:RepositoryID=None, git:Git=None, gh_repo:Repository=None, config=False):
         # TODO0 set the value int git.config
         self.remote_name = remote_name
         self.repo_branch = repo_branch
@@ -76,22 +76,30 @@ class Remote:
         
         self.git = git
         self.repo = repo
-        if self.repo:
-            self.user = repo.user
-            self.remote_url =repo.https_url()  #TODO use https or ssh url.
+        self.gh_repo = gh_repo
+        self.remote_url = ""
+        self.config = config
+        self.set_repo(repo)
+        self.set_gh_repo(gh_repo)
         if config:
             self.set_into_git()
         
     def set_gh_repo(self, gh_repo:Repository):
         if not self.gh_repo:
             self.gh_repo = gh_repo
-
-    def set_repo(self, repo:Repository):
+            self.remote_url  = self.remote_url or self.gh_repo.clone_url
+            repo = RepositoryID(self.gh_repo.clone_url)
+            if not self.repo:
+                self.set_repo(repo)
+            assert self.repo == repo, "Errors, origin: {self.repo}  != repo_from_gh: {repo} "
+    
+    def set_repo(self, repo:RepositoryID):
         if not self.repo:
             self.repo = repo
+            self.remote_url = self.remote_url or repo.https_url()  #TODO use https or ssh url.
+            self.remote_name =  self.remote_name or repo.user
         elif self.repo != repo:
             raise RuntimeError("Can't assign different repo to a Remote with  self.repo:{self.repo} and assigner repo:{repo}")
-
 
     def addRemote(self, other:"Remote"):
         for attr in other.__dict__:
@@ -108,7 +116,7 @@ class Remote:
     def check_integrity(self, name="Remote"):
         for attr in self.__dict__:
             if not self.__dict__[attr]:
-                raise(f"During checking the integrity of {name}, found the {attr} is empty.")
+                raise(f"During checking the integrity of {name}, found the {attr} is empty. May you provide relation variables in command line.")
 
     #todo set move ?
     def set_into_git(self):
@@ -154,12 +162,9 @@ class Auto:
     """ 
         Main Vars:
         self.target_url: most important url to assign remote target repository. If don't provided, we will auto choose local remote from current branch.
-        self.target_remote: the Remote of source repository.
         self.fork_remote: the Remote of fork from target repo. And self.fork_remote.repo also set to the git remote fork name.
         self.target_branch: the branch name of self.target_remote corresponding self.local_branch. AKA, the remote branch. such as "master"
-        self.fork_branch: the branch name of self.fork_remote corresponding self.local_branch.
-        self.local_branch: local branch which will be synced to remote sources, included the source repository and forked repository by push and pull-request.
-        self.gh_*: the * object from Github package
+        self.local_remote: local remote stores local info in git.config.
     """
     def __init__(self,
         target_url="",
@@ -184,23 +189,26 @@ class Auto:
         self.local_remote_is_fork = True if target_url else False # The rightness is dependent on the user.
         # accpet option parameters
         self.target_remote = Remote(
-            repo = Repository(target_url), 
+            repo = RepositoryID(target_url) if target_url else None, 
             remote_name = target_remote, 
             repo_branch = target_branch,
         )
         self.fork_remote = Remote(
-            fork_branch = fork_branch
+            repo_branch = fork_branch
         )
         # accept local parameters
-        self.local_remote = self.get_local_remote()
+        branch = self.git.get_branch_name()
+        self.local_remote = self.get_local_remote(branch)
         if self.local_remote_is_fork:
             self.fork_remote.addRemote(self.local_remote)
+            self.target_remote.local_branch = branch
         else:
             self.target_remote.addRemote(self.local_remote)
+            self.fork_remote.local_branch = branch
         # accept github paramters
         self._init_github()
         self._init_credential()
-
+        # check
         self.target_remote.check_integrity("target_remote")
         self.fork_remote.check_integrity("fork_remote")
         if self.fork_remote.repo == self.target_remote.repo:
@@ -208,8 +216,7 @@ class Auto:
             dead_for_resource()
         logger.success("The Initialization completed-_^")
 
-    def get_local_remote(self):
-        branch = self.git.get_branch_name()
+    def get_local_remote(self, branch):
         return Remote(
             git = self.git,
             repo =  RepositoryID(self.git.get_remote_url(branch)),
