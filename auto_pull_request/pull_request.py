@@ -226,7 +226,7 @@ class Auto:
             remote_name = target_remote, 
             repo_branch = target_branch,
             fork=False,
-            on_local=True if target_url else False,
+            on_local=True if not target_url else False,
         )
         self.fork_remote = Remote(
             git = self.git,
@@ -234,7 +234,7 @@ class Auto:
             repo = RepositoryID(fork_url) if fork_url else None,
             remote_name = fork_remote,
             fork=True,
-            on_local=True if fork_url else False,
+            on_local=True if not fork_url else False,
         )
         logger.info(f"accepted option parameters. \ntarget_remote: {self.target_remote}\nfork_remote: {self.fork_remote}\n")
         

@@ -212,9 +212,8 @@ class Git:
             out = ""
         else:
             _run_shell_command(["git", "remote", "remove", remote])
-        if out != url:
-            out = _run_shell_command(["git", "remote", "add", remote, url])
-            logger.info(f"The config has been updated. The the url of {remote} remote is {out}.")
+        out = _run_shell_command(["git", "remote", "add", remote, url])
+        logger.info(f"The config has been updated. The the url of {remote} remote is {out}.")
 
     @stop_timeout_exception
     def fetch_branch(self, repo, branch):
