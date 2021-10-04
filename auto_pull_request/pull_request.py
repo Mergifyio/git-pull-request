@@ -77,12 +77,13 @@ class Remote:
         self.user_branch: user for head branch of pull-request.
     """
 
-    def __init__(self, remote_name:str="", repo_branch:str="", local_branch:str="", repo:RepositoryID=None, git:Git=None, gh_repo:Repository=None, config=True, fork=False):
+    def __init__(self, remote_name:str="", repo_branch:str="", local_branch:str="", repo:RepositoryID=None, git:Git=None, gh_repo:Repository=None, config=True, fork=False, on_local=True,):
         self._gh_repo = None
         self._repo = None
         self.user = ""
         self.config = config
         self.fork =fork
+        self.on_local=on_local
         # TODO0 set the value int git.config
         self.remote_name = remote_name
         self.repo_branch = repo_branch
@@ -108,12 +109,10 @@ class Remote:
           
     @property
     def repo(self):
-        logger.info("repo")
         return self._repo
 
     @repo.setter
     def repo(self, new_repo:RepositoryID):
-        logger.info("repo.set")
         if not new_repo or self.repo:
             assert self.repo == new_repo, "Errors, origin: {self.repo}  != repo_from_gh: {repo} "
             return 
@@ -141,7 +140,7 @@ class Remote:
 
     def check_integrity(self, name="Remote"):
         try:
-            skip_list = ["config", "fork"]
+            skip_list = ["config", "fork", "on_local"]
             for attr in self.__dict__ :
                 if not self.__dict__[attr] and attr not in skip_list:
                     raise ValueError(f"During checking the integrity of {name}, "
@@ -164,15 +163,13 @@ class Remote:
         return branch in self.branches
 
     def clear_local(self):
-        if not self.git.clear_status():
+        if not self.git.clear_status(ignore_remote=not self.on_local):
             logger.error("Please commit local changes firstly")
             dead_for_resource()
 
     def pull(self):
-        self.clear_local()
         if not self.exist_repo_branches(self.repo_branch):
             return
-
         self.git.fetch_branch(self.remote_name, self.local_branch)
         try:
             self.git.rebase(self.remote_branch, self.local_branch)
@@ -187,7 +184,6 @@ class Remote:
             dead_for_resource()
 
     def push(self, ignore_error=False):
-        self.clear_local()
         self.git.push(self.remote_name, self.local_branch, self.repo_branch, ignore_error=ignore_error)
     
     def __str__(self):
@@ -224,7 +220,6 @@ class Auto:
         self.skip_editor = skip_editor
         self.token = token
 
-        self.local_remote_kind = self.get_local_remote_category(target_url, fork_url )# The rightness is dependent on the user.
         # accpet option parameters and basic info
         self.target_remote = Remote(
             git = self.git,
@@ -232,27 +227,29 @@ class Auto:
             remote_name = target_remote, 
             repo_branch = target_branch,
             fork=False,
+            on_local=True if target_url else False,
         )
         self.fork_remote = Remote(
             git = self.git,
             repo_branch = fork_branch,
             repo = RepositoryID(fork_url) if fork_url else None,
             remote_name = fork_remote,
-            fork=True
+            fork=True,
+            on_local=True if fork_url else False,
         )
         logger.info(f"accepted option parameters. \ntarget_remote: {self.target_remote}\nfork_remote: {self.fork_remote}\n")
         
         branch = self.git.get_branch_name()
         self.local_remote = self.get_local_remote(branch)
-        if self.local_remote_kind == self.info_category.fork:
-            self.fork_remote.addRemote(self.local_remote)
-        elif self.local_remote_kind == self.info_category.target:
+        if self.fork_remote.on_local and self.target_remote.on_local:
+            pass
+        elif self.target_remote.on_local:
             self.target_remote.addRemote(self.local_remote)
         else:
-            pass
+            self.fork_remote.addRemote(self.local_remote)
         self.target_remote.local_branch = branch
         self.fork_remote.local_branch = branch
-        logger.info(f"accepted local paramters. \ninfo_category:{self.local_remote_kind} \ntarget_remote: {self.target_remote} \nfork_remote: {self.fork_remote}\n")
+        logger.info(f"accepted local paramters. \ntarget_remote: {self.target_remote} \nfork_remote: {self.fork_remote}\n")
         
         self._init_github()
         self._init_credential()
@@ -353,6 +350,8 @@ class Auto:
         logger.info("Done~ ^_^")
 
     def sync(self):
+        self.fork_remote.clear_local()
+        self.target_remote.clear_local()
         self.target_remote.pull()
         self.fork_remote.pull()
         self.fork_remote.push(ignore_error=False)
