@@ -20,7 +20,7 @@ import click
 from loguru import logger
 
 from auto_pull_request.pull_request import Auto
-
+from auto_pull_request import version
 
 # Creates a GitHub pull-request.
 @click.command("pull-request")
@@ -73,6 +73,7 @@ from auto_pull_request.pull_request import Auto
     "/keeping-your-account-and-data-secure/creating-a-personal-access-token")
 def main(debug, target_url, target_remote, target_branch, fork_branch, title, body, keep_message, labels, comment, skip_editor, token):
     log_info(debug)
+    version_lint()
     Auto(
         target_url=target_url,
         target_remote=target_remote,
@@ -92,3 +93,5 @@ def log_info(debug):
     level = "DEBUG" if debug else "SUCCESS"
     logger.add(sys.stderr, level=level)
     
+def version_lint():
+    logger.success(f"Auto-Pull-Request ⭐️{version}")

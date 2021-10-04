@@ -1,9 +1,14 @@
 [tool.poetry]
 name = "auto-pull-request"
-version = "7.0.0"
 description = ""
+version = "0.0.0"
 authors = ["ruth-seven <1098057570@qq.com>"]
 
+
+[tool.poetry-dynamic-versioning]
+enable = true
+vsc = "git"
+style = "semver"
 
 [tool.poetry.dependencies]
 python = "^3.6"
@@ -11,16 +16,17 @@ loguru = "^0.5.3"
 click = "^8.0.1"
 attrs = "^21.2.0"
 PyGithub = "^1.55"
-setuptools-scm = "^6.3.2"
+poetry-dynamic-versioning = "0.13.1"
 
 [tool.poetry.dev-dependencies]
 
 [tool.poetry.scripts]
 auto_pull_request = 'auto_pull_request.parser:main'
 
-[tool.setuptools_scm]
-write_to = "auto_pull_request/parser.py"
+[tool.poetry-dynamic-versioning.substitution]
+files = ["auto_pull_request/__init__.py"]
+
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
+requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning"]
 build-backend = "poetry.core.masonry.api"
