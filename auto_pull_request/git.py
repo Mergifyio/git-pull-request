@@ -235,7 +235,7 @@ class Git:
         Please run it at project root.
         """
         try:
-            if not _run_shell_command(["git", "diff", "--merge-base", "head", "--", "."])\
+            if not _run_shell_command(["git", "diff", "--merge-base", "HEAD", "--", "."])\
             and not _run_shell_command(["git", "diff", "--", "."]):
                 return True
         except:
