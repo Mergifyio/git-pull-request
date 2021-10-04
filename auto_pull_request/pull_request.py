@@ -70,7 +70,7 @@ class Remote:
         self.remote_branch is the local remote branch syncing with remote repository. Such as, "origin/master".
         self.user_branch: user for head branch of pull-request.
     """
-    def __init__(self, remote_name:str="", repo_branch:str="", local_branch:str="", repo:RepositoryID=None, git:Git=None, gh_repo:Repository=None, config=False):
+    def __init__(self, remote_name:str="", repo_branch:str="", local_branch:str="", repo:RepositoryID=None, git:Git=None, gh_repo:Repository=None, config=True):
         self._gh_repo = None
         self._repo = None
         self.remote_url = ""
@@ -85,8 +85,7 @@ class Remote:
         self.repo = repo
         self.gh_repo = gh_repo
         
-        if config:
-            self.set_into_git()
+        
      
     @property
     def gh_repo(self):
@@ -102,6 +101,8 @@ class Remote:
         
         self.repo = RepositoryID(self._gh_repo.clone_url)
         
+        if self.config:
+            self.set_into_git()
 
     @property
     def repo(self):
