@@ -233,7 +233,7 @@ class Git:
         )
 
     @stop_timeout_exception    
-    def push(self, remote, source_branch, target_branch, set_upstream=False, ignore_error=False):
+    def push(self, remote, source_branch, target_branch, set_upstream=False, ignore_error=False, retry=1, timeout=45):
         flag = "-u" if set_upstream else ""
         return _run_shell_command(
             ["git", "push", "--tags", flag, remote, f"{source_branch}:{target_branch}"], raise_on_error= not ignore_error)
