@@ -276,9 +276,7 @@ class Auto:
         
         branch = self.git.get_branch_name()
         self.local_remote = self.get_local_remote(branch)
-        if self.fork_remote.on_local and self.target_remote.on_local:
-            pass
-        elif self.target_remote.on_local:
+        if self.target_remote.on_local:
             self.target_remote.addRemote(self.local_remote)
         else:
             self.fork_remote.addRemote(self.local_remote)
