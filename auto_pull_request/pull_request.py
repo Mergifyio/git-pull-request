@@ -77,7 +77,7 @@ class Remote:
         self.user_branch: user for head branch of pull-request.
     """
 
-    def __init__(self, remote_name:str="", repo_branch:str="", local_branch:str="", repo:RepositoryID=None, git:Git=None, gh_repo:Repository=None, config=True, fork=False, on_local=True,sync_merge=False,quick_commit=True):
+    def __init__(self, remote_name:str="", repo_branch:str="", local_branch:str="", repo:RepositoryID=None, git:Git=None, gh_repo:Repository=None, config=True, fork=False, on_local=True,sync_merge=False,quick_commit:str="false"):
         self._gh_repo = None 
         self._repo = None
         self.user = ""
@@ -196,10 +196,11 @@ class Remote:
     def merge(self):
         linter = ["merging", "git add .; git commit", "git merge --abort"]
         try:
-            if self.quick_commit:
-                self.git.quickMerge(self.remote_branch, self.local_branch, ours=True if self.quick_commit == "ours" else False)
-            else:
+            if self.quick_commit == "false":
                 self.git.merge(self.remote_branch, self.local_branch)
+            else: 
+                self.git.quickMerge(self.remote_branch, self.local_branch, ours=True if self.quick_commit == "ours" else False)
+                
         except RuntimeError:
             logger.error(
                 f"During the {linter[0]} {self.local_branch} from {self.remote_branch}, "
