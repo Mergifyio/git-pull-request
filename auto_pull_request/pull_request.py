@@ -172,7 +172,7 @@ class Remote:
             logger.info(f"Because of missing of {self.repo.repo}/{self.repo_branch}, fetching")
     
         if self.sync_merge:
-            sync = self.git.merge()
+            sync = self.git.merge
             linter = ["merging", "git add .; git commit", "git merge --abort"]
         else:
             sync = self.git.rebase
