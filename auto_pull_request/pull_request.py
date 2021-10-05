@@ -77,13 +77,14 @@ class Remote:
         self.user_branch: user for head branch of pull-request.
     """
 
-    def __init__(self, remote_name:str="", repo_branch:str="", local_branch:str="", repo:RepositoryID=None, git:Git=None, gh_repo:Repository=None, config=True, fork=False, on_local=True,):
-        self._gh_repo = None
+    def __init__(self, remote_name:str="", repo_branch:str="", local_branch:str="", repo:RepositoryID=None, git:Git=None, gh_repo:Repository=None, config=True, fork=False, on_local=True,sync_merge=False):
+        self._gh_repo = None 
         self._repo = None
         self.user = ""
         self.config = config
         self.fork =fork
         self.on_local=on_local
+        self.sync_merge=sync_merge
         # TODO0 set the value int git.config
         self.remote_name = remote_name
         self.repo_branch = repo_branch
@@ -92,7 +93,8 @@ class Remote:
         # set property attr
         self.repo = repo
         self.gh_repo = gh_repo
-        
+
+        self.copy_option_list = ["user", "remote_name", "repo_branch", "local_branch", "git", "repo", "gh_repo"]
         
      
     @property
@@ -104,8 +106,8 @@ class Remote:
         if not new_gh_repo or self._gh_repo:
             return
 
-        self._gh_repo = new_gh_repo
-        self.repo = RepositoryID(self._gh_repo.clone_url)
+        self._gh_repo = new_gh_repo # type: ignore
+        self.repo = RepositoryID(self._gh_repo.clone_url)  # type: ignore
           
     @property
     def repo(self):
@@ -124,9 +126,9 @@ class Remote:
             self.set_into_git()
 
     def addRemote(self, other:"Remote"):
-        white_list = ["user", "remote_name", "repo_branch", "local_branch", "git", "repo", "gh_repo"]
+        
         for attr in other.__dict__:
-            if attr in white_list:
+            if attr in self.copy_option_list:
                 self.__dict__[attr] =  self.__dict__[attr] or other.__dict__[attr]
 
     @property
@@ -139,9 +141,8 @@ class Remote:
 
     def check_integrity(self, name="Remote"):
         try:
-            skip_list = ["config", "fork", "on_local"]
             for attr in self.__dict__ :
-                if not self.__dict__[attr] and attr not in skip_list:
+                if not self.__dict__[attr] and attr in self.copy_option_list:
                     raise ValueError(f"During checking the integrity of {name}, "
                     f"found the {attr} is empty. May you provide relation variables in command line.")
         except ValueError as e:
@@ -169,17 +170,24 @@ class Remote:
     def pull(self):
         if not self.exist_repo_branches(self.repo_branch):
             logger.info(f"Because of missing of {self.repo.repo}/{self.repo_branch}, fetching")
-            
+    
+        if self.sync_merge:
+            sync = self.git.merge()
+            linter = ["merging", "git add .; git commit", "git merge --abort"]
+        else:
+            sync = self.git.rebase
+            linter = ["rebasing", "git add .; git rebase -- continue", "git rebase --abort"]
+
         self.git.fetch_branch(self.remote_name, self.repo_branch)
         try:
-            self.git.rebase(self.remote_branch, self.local_branch)
+            sync(self.remote_branch, self.local_branch)
         except RuntimeError:
             logger.error(
-                f"During the rebasing {self.local_branch} from {self.remote_branch}, "
+                f"During the {linter[0]} {self.local_branch} from {self.remote_branch}, "
                 "it is likely that your change has a merge conflict. "
-                "You may resolve it by `git add . ;git rebase --continue` command. "
+                f"You may resolve it by `{linter[1]}`"
                 "Once done run `git pull-request' again. "
-                "If you want to abort conflict resolution, run `git rebase --abort'."
+                f"If you want to abort conflict resolution, run `{linter[2]}`."
             )
             dead_for_resource()
 
@@ -211,7 +219,8 @@ class Auto:
         comment="",
         labels=None,
         skip_editor="",
-        token=""):
+        token="",
+        sync_merge=False,):
         self.git = Git()
         self.content = PRContent(title, body)
         self.keep_message = keep_message
@@ -228,6 +237,7 @@ class Auto:
             repo_branch = target_branch,
             fork=False,
             on_local=True if not target_url else False,
+            sync_merge=sync_merge,
         )
         self.fork_remote = Remote(
             git = self.git,
@@ -236,6 +246,7 @@ class Auto:
             remote_name = fork_remote,
             fork=True,
             on_local=True if not fork_url else False,
+            sync_merge=sync_merge,
         )
         logger.info(f"accepted option parameters. \ntarget_remote: {self.target_remote}\nfork_remote: {self.fork_remote}\n")
         

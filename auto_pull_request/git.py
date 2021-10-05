@@ -227,10 +227,18 @@ class Git:
 
     def rebase(self, upstream=None, branch=None):
         if not upstream and branch:
-            raise ValueError("If branch isn't empty, fill upstream firstly.") 
+            raise ValueError("The branch is empty, fill upstream firstly.") 
         return _run_shell_command(
             ["git", "rebase", upstream, branch]
         )
+
+    def merge(self, branch1=None, branch2=None):
+        if not branch1 :
+            raise ValueError("The branch1 is empty, fill branch1 firstly.") 
+        return _run_shell_command(
+            ["git", "merge","--allow-unrelated-histories", branch1, branch2]
+        )
+        
 
     @stop_timeout_exception    
     def push(self, remote, source_branch, target_branch, set_upstream=False, ignore_error=False, retry=1, timeout=45):

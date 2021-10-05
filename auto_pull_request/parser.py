@@ -75,7 +75,9 @@ from auto_pull_request import __version__
     "If empty, we will promot in terminal to input corresponding infos.\n"
     "How to get you personal token? Please check this https://docs.github.com/en/authentication"
     "/keeping-your-account-and-data-secure/creating-a-personal-access-token")
-def main(debug, target_url, target_remote, target_branch, fork_branch, fork_url, fork_remote, title, body, keep_message, labels, comment, skip_editor, token):
+@click.option("--sync-merge/sync-rebase", default=False, show_default=True,
+    help="Choose to the git-command to sync with remote repo. Option `--allow-unrelated-histories` with `git merge` is deafault.")
+def main(debug, target_url, target_remote, target_branch, fork_branch, fork_url, fork_remote, title, body, keep_message, labels, comment, skip_editor, token, sync_merge):
     log_info(debug)
     version_lint()
     Auto(
@@ -92,6 +94,7 @@ def main(debug, target_url, target_remote, target_branch, fork_branch, fork_url,
         labels=labels,
         skip_editor=skip_editor,
         token=token,
+        sync_merge=sync_merge,
         ).run()
 
 def log_info(debug):
