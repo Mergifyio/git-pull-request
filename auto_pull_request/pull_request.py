@@ -278,9 +278,9 @@ class Auto:
         
         branch = self.git.get_branch_name()
         self.local_remote = self.get_local_remote(branch)
-        if local_kind == self.info_category.fork:
+        if local_kind == self.info_category.target:
             self.target_remote.addRemote(self.local_remote)
-        elif local_kind == self.info_category.target:
+        elif local_kind == self.info_category.fork:
             self.fork_remote.addRemote(self.local_remote)
         self.target_remote.local_branch = branch
         self.fork_remote.local_branch = branch
