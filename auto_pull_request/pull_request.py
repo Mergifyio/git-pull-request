@@ -157,9 +157,9 @@ class Remote:
     def create_from_git(self):
         pass
 
-    def exist_repo_branches(self, branch):
+    def exist_repo_branches(self, repo_branch:str):
         self.branches = self.gh_repo.get_branches()
-        return branch in self.branches
+        return repo_branch in self.branches
 
     def clear_local(self):
         if not self.git.clear_status(ignore_remote=not self.on_local):
@@ -168,8 +168,9 @@ class Remote:
 
     def pull(self):
         if not self.exist_repo_branches(self.repo_branch):
-            return
-        self.git.fetch_branch(self.remote_name, self.local_branch)
+            logger.info(f"Because of missing of {self.repo.repo}/{self.repo_branch}, fetching")
+            
+        self.git.fetch_branch(self.remote_name, self.repo_branch)
         try:
             self.git.rebase(self.remote_branch, self.local_branch)
         except RuntimeError:

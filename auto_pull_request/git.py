@@ -217,8 +217,8 @@ class Git:
         logger.info(f"The config has been updated. The the url of {remote} remote is {out}.")
 
     @stop_timeout_exception
-    def fetch_branch(self, repo, branch):
-        return _run_shell_command(["git", "fetch", repo, branch])
+    def fetch_branch(self, remote, branch):
+        return _run_shell_command(["git", "fetch", remote, branch])
     
 
     def set_upper_branch(self, remote_branch, local_branch):
