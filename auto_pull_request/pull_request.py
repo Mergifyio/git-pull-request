@@ -129,7 +129,10 @@ class Remote:
     def addRemote(self, other:"Remote"):
         for attr in other.__dict__:
             if attr in self.copy_option_list:
+                logger.info(f"atter {attr}")
                 self.__dict__[attr] =  self.__dict__[attr] or other.__dict__[attr]
+        self.repo = other.repo
+        self.gh_repo = other.gh_repo
 
     @property
     def remote_branch(self):
@@ -274,7 +277,7 @@ class Auto:
             sync_merge=sync_merge,
             quick_commit=quick_commit,
         )
-        logger.info(f"local category: {local_kind}.\naccepted option parameters. \ntarget_remote: {self.target_remote}\nfork_remote: {self.fork_remote}\n")
+        logger.info(f"accepted option parameters. \ntarget_remote: {self.target_remote}\nfork_remote: {self.fork_remote}\n")
         
         branch = self.git.get_branch_name()
         self.local_remote = self.get_local_remote(branch)
@@ -284,7 +287,7 @@ class Auto:
             self.fork_remote.addRemote(self.local_remote)
         self.target_remote.local_branch = branch
         self.fork_remote.local_branch = branch
-        logger.info(f"accepted local paramters. \ntarget_remote: {self.target_remote} \nfork_remote: {self.fork_remote}\n")
+        logger.info(f"local category: {local_kind}.\naccepted local paramters. \ntarget_remote: {self.target_remote} \nfork_remote: {self.fork_remote}\n")
         
         self._init_github()
         self._init_credential()
@@ -300,7 +303,7 @@ class Auto:
     def get_local_remote(self, branch):
         remote_name = self.git.get_remote_for_branch(branch)
         remote_url = self.git.get_remote_url(remote_name)
-        return Remote(
+        local =  Remote(
             git = self.git,
             repo =  RepositoryID(remote_url) if remote_url else None ,
             remote_name = remote_name,
@@ -308,7 +311,9 @@ class Auto:
             local_branch = branch,
             config=False,
         )
-        
+        logger.info(f"local remote info {local}")
+        return local
+
     def _init_credential(self):
         if not self.token:
             self.username, self.token = self.git.get_login_password()
