@@ -216,7 +216,8 @@ class Remote:
         logger.success(f"Push success from {self.local_branch} to {self.repo_branch}")
 
     def __str__(self):
-        return " ".join([item + ": \'" + str(self.__dict__[item]) + "\'"for item in self.__dict__ if item != "git"])
+        return " ".join([item + ": \'" + str(self.__dict__[item]) + "\'"for item in self.__dict__ 
+            if item not in ["git", "copy_option_list"]])
     
 
 class Auto:
@@ -252,13 +253,14 @@ class Auto:
         self.token = token
 
         # accpet option parameters and basic info
+        local_kind, target_local, fork_local = self.get_local_remote_category(target_url, fork_url)
         self.target_remote = Remote(
             git = self.git,
             repo = RepositoryID(target_url) if target_url else None, 
             remote_name = target_remote, 
             repo_branch = target_branch,
             fork=False,
-            on_local=True if not target_url else False,
+            on_local=target_local,
             sync_merge=sync_merge,
             quick_commit=quick_commit,
         )
@@ -268,17 +270,17 @@ class Auto:
             repo = RepositoryID(fork_url) if fork_url else None,
             remote_name = fork_remote,
             fork=True,
-            on_local=True if not fork_url else False,
+            on_local=fork_local,
             sync_merge=sync_merge,
             quick_commit=quick_commit,
         )
-        logger.info(f"accepted option parameters. \ntarget_remote: {self.target_remote}\nfork_remote: {self.fork_remote}\n")
+        logger.info(f"local category: {local_kind}.\naccepted option parameters. \ntarget_remote: {self.target_remote}\nfork_remote: {self.fork_remote}\n")
         
         branch = self.git.get_branch_name()
         self.local_remote = self.get_local_remote(branch)
-        if self.target_remote.on_local:
+        if local_kind == self.info_category.fork:
             self.target_remote.addRemote(self.local_remote)
-        else:
+        elif local_kind == self.info_category.target:
             self.fork_remote.addRemote(self.local_remote)
         self.target_remote.local_branch = branch
         self.fork_remote.local_branch = branch
@@ -450,13 +452,18 @@ class Auto:
         logger.success(f"Success to update pr in {pr.html_url}")
 
     class info_category(Enum):
-            fork = auto()
-            target = auto()
-            none = auto()
+            fork = auto() # option: target_url, local: fork_url:
+            target = auto() # optinoL fork_url, local: target_url
+                            # option: None, local: target_url
+            none = auto() # optionL target_url, fork_url
 
     def get_local_remote_category(self, target_url, fork_url):
+        """Because of dependence on options, return run mode, and on_local values of target_repo and fork_repo
+        """
         if target_url and fork_url:
-            return self.info_category.none
+            return self.info_category.none, False, False
         if target_url:
-            return self.info_category.fork
-        return self.info_category.target
+            return self.info_category.fork, False, True
+        if fork_url:
+            return self.info_category.target, True, False
+        return self.info_category.target, True, False
