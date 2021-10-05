@@ -3,6 +3,7 @@ import os
 import re
 import subprocess
 import tempfile
+import re
 
 from subprocess import TimeoutExpired
 from auto_pull_request.utility import quoted_str, stop_timeout_exception
@@ -238,7 +239,21 @@ class Git:
         return _run_shell_command(
             ["git", "merge","--allow-unrelated-histories", branch1, branch2]
         )
-        
+    
+    def checkout_merge(self, ours=True, files="."):
+        return _run_shell_command(
+            ["git", "checkout", "--ours" if ours else "--theirs", "--", files])
+    
+    def quickMerge(self, branch1=None, branch2=None, ours=True, files="."):
+        try:
+            self.merge(branch1, branch2)
+        except RuntimeError as e:
+            logger.info("During merge, some errors occurs. Now we assume that this's a merge conflict.")
+            self.checkout_merge(ours, files)
+            _run_shell_command(["git", "add", "."])
+            _run_shell_command(["git", "commit", "-m" , quoted_str("Quick merge with" + "--ours" if ours else "--theirs")])
+        return
+
 
     @stop_timeout_exception    
     def push(self, remote, source_branch, target_branch, set_upstream=False, ignore_error=False, retry=1, timeout=45):
@@ -258,4 +273,21 @@ class Git:
             return False
         return False
     
+    def merge_conflict(file, keep_history=True):
+        def select(res: re.Match):
+            print(21)
+            if keep_history:
+                return res.group("before")
+            else:
+                return res.group("after")
+        
+        with open(file, "r") as fr:
+            content = fr.read()
+        
+        pattern = r"(<<<<<<<.*\n(?P<before>(.*\n)*?)=======\n(?P<after>(.*\n)*?)>>>>>>>.*?\n)"
+        res = re.sub(pattern=pattern, repl=select, string=content, count=0)
+
+        with open(file, "w") as fw:
+            fw.write(res)
+
 
