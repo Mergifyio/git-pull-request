@@ -30,21 +30,6 @@ queue_rules:
     batch_size: 5
 
 pull_request_rules:
-  - name: automatic merge for hotfix
-    conditions:
-      - base=main
-      - author=@devs
-      - check-success=semantic-pull-request
-      - label=hotfix
-      - title~=^fix
-      - "#changes-requested-reviews-by=0"
-      - "#commits=1"
-      - label!=work-in-progress
-      - label!=manual merge
-    actions:
-      queue:
-        name: default
-
   - name: automatic merge
     conditions:
       - base=main
@@ -53,7 +38,9 @@ pull_request_rules:
       - check-success=tox (3.9.0, py39)
       - check-success=tox (3.10.0, py310)
       - check-success=tox (3.10.0, pep8)
-      - "#approved-reviews-by>=1"
+      - or:
+          - "#approved-reviews-by>=1"
+          - label=no-review-needed
       - "#changes-requested-reviews-by=0"
       - "#commits=1"
       - label!=work-in-progress
@@ -83,40 +70,6 @@ pull_request_rules:
         bot_account: mergify-ci-bot
         message: "@dependabot recreate"
 
-  - name: dismiss reviews except for core devs
-    conditions:
-      - author!=@devs
-    actions:
-      dismiss_reviews: {}
-  - name: dismiss reviews for core devs
-    conditions:
-      - author=@devs
-    actions:
-      dismiss_reviews:
-        # Do not remove approval for core devs
-        approved: False
-  - name: auto add wip
-    conditions:
-      - title~=^(wip|WIP).*
-    actions:
-      label:
-        add: ["work-in-progress"]
-  - name: request review
-    conditions:
-      - -author=dependabot[bot]
-      - label!=work-in-progress
-      - -merged
-      - -closed
-      - check-success=tox (3.8.0, py38)
-      - check-success=tox (3.9.0, py39)
-      - check-success=tox (3.10.0, py310)
-      - check-success=tox (3.10.0, pep8)
-      - "#approved-reviews-by=0"
-      - "#changes-requested-reviews-by=0"
-    actions:
-      request_reviews:
-        teams:
-          - devs
   - name: warn on conflicts
     conditions:
       - conflict
@@ -134,10 +87,3 @@ pull_request_rules:
       label:
         remove:
           - conflict
-  - name: warn on CI failure for hotfix
-    conditions:
-      - label=hotfix
-      - "#check-failure>0"
-    actions:
-      comment:
-        message: Your hotfix is failing CI @{{author}} 🥺
