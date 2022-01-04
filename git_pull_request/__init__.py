@@ -662,7 +662,7 @@ def fork_and_push_pull_request(
                     ">\n> Current pull request content:\n"
                     + pull.title
                     + "\n\n"
-                    + pull.body,
+                    + (pull.body or ""),
                 )
 
                 ptitle, body = edit_title_and_message(ptitle, body)
