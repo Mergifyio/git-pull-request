@@ -2,10 +2,6 @@
  git-pull-request
 ==================
 
-.. image:: https://circleci.com/gh/Mergifyio/git-pull-request.svg?style=svg&circle-token=a9e42c2dbc567363643837c7d68e4675b8a874a9
-    :target: https://circleci.com/gh/Mergifyio/git-pull-request
-    :alt: Build Status
-
 .. image:: https://badge.fury.io/py/git-pull-request.svg
     :target: https://badge.fury.io/py/git-pull-request
 
