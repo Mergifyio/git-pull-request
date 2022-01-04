@@ -14,18 +14,18 @@ defaults:
 queue_rules:
   - name: default
     conditions:
-      - check-success=py38 (3.8.0, py38)
-      - check-success=py39 (3.9.0, py39)
-      - check-success=py310 (3.10.0, py310)
-      - check-success=pep8 (3.10.0, pep8)
+      - check-success=tox (3.8.0, py38)
+      - check-success=tox (3.9.0, py39)
+      - check-success=tox (3.10.0, py310)
+      - check-success=tox (3.10.0, pep8)
     speculative_checks: 5
 
   - name: lowprio
     conditions:
-      - check-success=py38 (3.8.0, py38)
-      - check-success=py39 (3.9.0, py39)
-      - check-success=py310 (3.10.0, py310)
-      - check-success=pep8 (3.10.0, pep8)
+      - check-success=tox (3.8.0, py38)
+      - check-success=tox (3.9.0, py39)
+      - check-success=tox (3.10.0, py310)
+      - check-success=tox (3.10.0, pep8)
     speculative_checks: 3
     batch_size: 5
 
@@ -49,10 +49,10 @@ pull_request_rules:
     conditions:
       - base=main
       - check-success=semantic-pull-request
-      - check-success=py38 (3.8.0, py38)
-      - check-success=py39 (3.9.0, py39)
-      - check-success=py310 (3.10.0, py310)
-      - check-success=pep8 (3.10.0, pep8)
+      - check-success=tox (3.8.0, py38)
+      - check-success=tox (3.9.0, py39)
+      - check-success=tox (3.10.0, py310)
+      - check-success=tox (3.10.0, pep8)
       - "#approved-reviews-by>=1"
       - "#changes-requested-reviews-by=0"
       - "#commits=1"
@@ -107,10 +107,10 @@ pull_request_rules:
       - label!=work-in-progress
       - -merged
       - -closed
-      - check-success=py38 (3.8.0, py38)
-      - check-success=py39 (3.9.0, py39)
-      - check-success=py310 (3.10.0, py310)
-      - check-success=pep8 (3.10.0, pep8)
+      - check-success=tox (3.8.0, py38)
+      - check-success=tox (3.9.0, py39)
+      - check-success=tox (3.10.0, py310)
+      - check-success=tox (3.10.0, pep8)
       - "#approved-reviews-by=0"
       - "#changes-requested-reviews-by=0"
     actions:
