@@ -628,7 +628,12 @@ def fork_and_push_pull_request(
             ]
         )
 
-    pulls = list(repo_to_fork.get_pulls(base=target_branch, head=head))
+    head_login, _, head_ref = head.partition(":")
+    pulls = list(
+        p
+        for p in repo_to_fork.get_pulls(base=target_branch)
+        if p.head.ref == head_ref and p.head.user.login == head_login
+    )
 
     nb_commits, git_title, git_message = git_get_title_and_message(
         "%s/%s" % (target_remote, target_branch), branch
