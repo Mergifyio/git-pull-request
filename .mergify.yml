@@ -1,35 +1,143 @@
+defaults:
+  actions:
+    queue:
+      name: default
+      method: squash
+      update_method: rebase
+      commit_message_template: |
+        {{ title }} (#{{ number }})
+
+        {{ body }}
+    squash:
+      commit_message: first-commit
+
+queue_rules:
+  - name: default
+    conditions:
+      - check-success=py38 (3.8.0, py38)
+      - check-success=py39 (3.9.0, py39)
+      - check-success=py310 (3.10.0, py310)
+      - check-success=pep8 (3.10.0, pep8)
+    speculative_checks: 5
+
+  - name: lowprio
+    conditions:
+      - check-success=py38 (3.8.0, py38)
+      - check-success=py39 (3.9.0, py39)
+      - check-success=py310 (3.10.0, py310)
+      - check-success=pep8 (3.10.0, pep8)
+    speculative_checks: 3
+    batch_size: 5
+
 pull_request_rules:
+  - name: automatic merge for hotfix
+    conditions:
+      - base=main
+      - author=@devs
+      - check-success=semantic-pull-request
+      - label=hotfix
+      - title~=^fix
+      - "#changes-requested-reviews-by=0"
+      - "#commits=1"
+      - label!=work-in-progress
+      - label!=manual merge
+    actions:
+      queue:
+        name: default
+
   - name: automatic merge
     conditions:
-      - base=master
-      - "status-success=ci/circleci: pep8"
-      - "status-success=ci/circleci: py35"
-      - "status-success=ci/circleci: py36"
-      - "status-success=ci/circleci: py37"
-      - "status-success=ci/circleci: py38"
+      - base=main
+      - check-success=semantic-pull-request
+      - check-success=py38 (3.8.0, py38)
+      - check-success=py39 (3.9.0, py39)
+      - check-success=py310 (3.10.0, py310)
+      - check-success=pep8 (3.10.0, pep8)
       - "#approved-reviews-by>=1"
+      - "#changes-requested-reviews-by=0"
+      - "#commits=1"
       - label!=work-in-progress
+      - label!=manual merge
     actions:
-      merge:
-        strict: true
-  - name: dismiss reviews
-    conditions: []
-    actions:
-      dismiss_reviews: {}
-  - name: automatic merge no review
+      queue:
+
+  - name: automatic merge from dependabot
     conditions:
-      - base=master
-      - "status-success=ci/circleci: pep8"
-      - "status-success=ci/circleci: py35"
-      - "status-success=ci/circleci: py36"
-      - "status-success=ci/circleci: py37"
-      - "status-success=ci/circleci: py38"
-      - label=no-review-needed
+      - check-success=semantic-pull-request
+      - author=dependabot[bot]
       - label!=work-in-progress
+      - label!=manual merge
+      - "#commits=1"
     actions:
-      merge:
-        strict: true
-  - name: dismiss reviews
-    conditions: []
+      queue:
+        method: rebase
+        commit_message_template: null
+        name: lowprio
+
+  - name: dependabot conflict fixer
+    conditions:
+      - author=dependabot[bot]
+      - conflict
+    actions:
+      comment:
+        bot_account: mergify-ci-bot
+        message: "@dependabot recreate"
+
+  - name: dismiss reviews except for core devs
+    conditions:
+      - author!=@devs
     actions:
       dismiss_reviews: {}
+  - name: dismiss reviews for core devs
+    conditions:
+      - author=@devs
+    actions:
+      dismiss_reviews:
+        # Do not remove approval for core devs
+        approved: False
+  - name: auto add wip
+    conditions:
+      - title~=^(wip|WIP).*
+    actions:
+      label:
+        add: ["work-in-progress"]
+  - name: request review
+    conditions:
+      - -author=dependabot[bot]
+      - label!=work-in-progress
+      - -merged
+      - -closed
+      - check-success=py38 (3.8.0, py38)
+      - check-success=py39 (3.9.0, py39)
+      - check-success=py310 (3.10.0, py310)
+      - check-success=pep8 (3.10.0, pep8)
+      - "#approved-reviews-by=0"
+      - "#changes-requested-reviews-by=0"
+    actions:
+      request_reviews:
+        teams:
+          - devs
+  - name: warn on conflicts
+    conditions:
+      - conflict
+      - -closed
+    actions:
+      comment:
+        message: "@{{author}} this pull request is now in conflict 😩"
+      label:
+        add:
+          - conflict
+  - name: remove conflict label if not needed
+    conditions:
+      - -conflict
+    actions:
+      label:
+        remove:
+          - conflict
+  - name: warn on CI failure for hotfix
+    conditions:
+      - label=hotfix
+      - "#check-failure>0"
+    actions:
+      comment:
+        message: Your hotfix is failing CI @{{author}} 🥺

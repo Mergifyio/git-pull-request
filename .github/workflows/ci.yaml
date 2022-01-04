@@ -5,7 +5,7 @@ on:
       - main
 
 jobs:
-  pep8:
+  ci:
     timeout-minutes: 5
     runs-on: ubuntu-latest
     strategy:
