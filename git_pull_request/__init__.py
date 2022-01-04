@@ -888,7 +888,7 @@ def main():
             dry_run=args.dry_run,
             labels=args.label,
         )
-    except Exception:
+    except Exception:  # noqa B902
         LOG.error("Unable to send pull request", exc_info=True)
         return 128
 

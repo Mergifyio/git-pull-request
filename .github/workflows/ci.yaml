@@ -1,0 +1,29 @@
+name: Continuous Integration
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  pep8:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - python-version: 3.8.0
+            target: "py38"
+          - python-version: 3.9.0
+            target: "py39"
+          - python-version: 3.10.0
+            target: "py310"
+          - python-version: 3.10.0
+            target: "pep8"
+    steps:
+      - uses: actions/checkout@v2.4.0
+      - uses: actions/setup-python@v2.3.1
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: |
+          pip install tox
+          tox -e ${{ matrix.target }}

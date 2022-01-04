@@ -338,6 +338,7 @@ class TestExceptionFormatting(unittest.TestCase):
                     }
                 ],
             },
+            headers={},
         )
         self.assertEqual(
             "Unable to create pull request: Validation Failed (422)\n"
@@ -358,6 +359,7 @@ class TestExceptionFormatting(unittest.TestCase):
                     {"resource": "PullRequest", "field": "head", "code": "invalid"}
                 ],
             },
+            headers={},
         )
         self.assertEqual(
             "Unable to create pull request: Validation Failed (422)\n\n"
