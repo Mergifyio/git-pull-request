@@ -328,13 +328,13 @@ class TestExceptionFormatting(unittest.TestCase):
         e = github.GithubException(
             422,
             {
-                u"documentation_url": u"https://developer.github.com/v3/pulls/#create-a-pull-request",
-                u"message": u"Validation Failed",
-                u"errors": [
+                "documentation_url": "https://developer.github.com/v3/pulls/#create-a-pull-request",
+                "message": "Validation Failed",
+                "errors": [
                     {
-                        u"message": u"No commits between issues-221 and issues-221",
-                        u"code": u"custom",
-                        u"resource": u"PullRequest",
+                        "message": "No commits between issues-221 and issues-221",
+                        "code": "custom",
+                        "resource": "PullRequest",
                     }
                 ],
             },
