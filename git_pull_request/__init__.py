@@ -29,6 +29,7 @@ import attr
 import daiquiri
 import github
 
+from git_pull_request import bitbucket
 from git_pull_request import pagure
 from git_pull_request import textparse
 
@@ -191,7 +192,9 @@ def git_set_config_hosttype(hosttype):
 def get_hosttype(host):
     hosttype = git_get_config_hosttype()
     if hosttype == "":
-        if pagure.is_pagure(host):
+        if bitbucket.is_bitbucket(host):
+            hosttype = "bitbucket"
+        elif pagure.is_pagure(host):
             hosttype = "pagure"
         else:
             hosttype = "github"
@@ -368,7 +371,10 @@ def git_pull_request(
 
     LOG.debug("Found %s user: `%s' password: <redacted>", hostname, user)
 
-    if hosttype == "pagure":
+    if hosttype == "bitbucket":
+        g = bitbucket.Client(hostname, user, password, user_to_fork, reponame_to_fork)
+        repo = g.get_repo(reponame_to_fork)
+    elif hosttype == "pagure":
         g = pagure.Client(hostname, user, password, reponame_to_fork)
         repo = g.get_repo(reponame_to_fork)
     else:

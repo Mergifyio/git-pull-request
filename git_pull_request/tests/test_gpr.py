@@ -113,6 +113,16 @@ class TestStuff(BaseTestGitRepo):
             ),
         )
 
+        gpr.git_set_config_hosttype("bitbucket")
+        self.assertEqual(
+            ("bitbucket", "bitbucket.org", "atlassian", "bitbucket"),
+            attr.astuple(
+                gpr.get_repository_id_from_url(
+                    "https://bitbucket.org/atlassian/bitbucket"
+                )
+            ),
+        )
+
 
 class TestGitCommand(fixtures.TestWithFixtures):
     def setUp(self):

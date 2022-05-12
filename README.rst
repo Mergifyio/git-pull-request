@@ -5,8 +5,8 @@
 .. image:: https://badge.fury.io/py/git-pull-request.svg
     :target: https://badge.fury.io/py/git-pull-request
 
-git-pull-request is a command line tool to send GitHub or Pagure_ pull-request from your
-terminal.
+git-pull-request is a command line tool to send Bitbucket_, GitHub or Pagure_ pull-request
+from your terminal.
 
 Installation
 ============
@@ -51,6 +51,13 @@ GitHub has a good documentation about using `git credential
 
 The full documentation is available on the `git-scm.com website
 <https://git-scm.com/book/en/v2/Git-Tools-Credential-Storage>`_.
+
+Bitbucket App Passwords
+-----------------------
+
+Bitbucket uses an App password, you need to create one by visiting `your personal settings
+<https://bitbucket.org/account/settings/app-passwords/>`_
+and adding `Repositories:Write` and `Pull requests:Write` permissions.
 
 GitHub
 ------
@@ -128,4 +135,5 @@ calling `hub pull-request` would just open a new pull-request.
 git-pull-request wraps all of these operations into one convenient tool.
 
 .. _hub: https://hub.github.com/
+.. _Bitbucket: https://bitbucket.org
 .. _Pagure: https://pagure.io/pagure
