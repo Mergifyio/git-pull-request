@@ -11,13 +11,15 @@ jobs:
     strategy:
       matrix:
         include:
-          - python-version: 3.8.0
+          - python-version: 3.8
             target: "py38"
-          - python-version: 3.9.0
+          - python-version: 3.9
             target: "py39"
-          - python-version: 3.10.0
+          - python-version: 3.10
             target: "py310"
-          - python-version: 3.10.0
+          - python-version: 3.11
+            target: "py311"
+          - python-version: 3.11
             target: "pep8"
     steps:
       - uses: actions/checkout@v3
@@ -26,4 +28,4 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: |
           pip install tox
-          tox -e ${{ matrix.target }}
+          tox -e ${{ matrix.target }}
