@@ -518,7 +518,6 @@ def fork_and_push_pull_request(
     dry_run=False,
     labels=None,
 ):
-
     g_user = g.get_user()
 
     forked = False
