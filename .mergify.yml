@@ -1,43 +1,27 @@
-defaults:
-  actions:
-    queue:
-      name: default
-      method: squash
-      update_method: rebase
-      commit_message_template: |
-        {{ title }} (#{{ number }})
+extends: .github
+shared:
+  DefaultQueueOptions: &DefaultQueueOptions
+    commit_message_template: |
+      {{ title }} (#{{ number }})
 
-        {{ body }}
-    squash:
-      commit_message: first-commit
+      {{ body }}
+    allow_inplace_checks: true
+    merge_method: squash
+    speculative_checks: 5
+
+  CheckRuns: &CheckRuns
+    - check-success=tox (3.8, py38)
+    - check-success=tox (3.9, py39)
+    - check-success=tox (3.10, py310)
+    - check-success=tox (3.11, py311)
+    - check-success=tox (3.11, pep8)
 
 queue_rules:
   - name: default
-    conditions:
-      - check-success=tox (3.8.0, py38)
-      - check-success=tox (3.9.0, py39)
-      - check-success=tox (3.10.0, py310)
-      - check-success=tox (3.10.0, pep8)
-    speculative_checks: 5
-
-  - name: lowprio
-    conditions:
-      - check-success=tox (3.8.0, py38)
-      - check-success=tox (3.9.0, py39)
-      - check-success=tox (3.10.0, py310)
-      - check-success=tox (3.10.0, pep8)
-    speculative_checks: 3
-    batch_size: 5
-
-pull_request_rules:
-  - name: automatic merge
-    conditions:
-      - base=main
+    <<: *DefaultQueueOptions
+    queue_conditions:
+      - and: *CheckRuns
       - check-success=semantic-pull-request
-      - check-success=tox (3.8.0, py38)
-      - check-success=tox (3.9.0, py39)
-      - check-success=tox (3.10.0, py310)
-      - check-success=tox (3.10.0, pep8)
       - or:
           - "#approved-reviews-by>=1"
           - label=no-review-needed
@@ -45,45 +29,31 @@ pull_request_rules:
       - "#commits=1"
       - label!=work-in-progress
       - label!=manual merge
-    actions:
-      queue:
+    merge_conditions:
+      - and: *CheckRuns
 
-  - name: automatic merge from dependabot
-    conditions:
-      - check-success=semantic-pull-request
-      - author=dependabot[bot]
-      - label!=work-in-progress
-      - label!=manual merge
+  - name: lowprio
+    <<: *DefaultQueueOptions
+    queue_conditions:
+      - and: *CheckRuns
       - "#commits=1"
+      - author=dependabot[bot]
+    merge_method: merge
+    merge_conditions:
+      - and: *CheckRuns
+    speculative_checks: 1
+    batch_size: 7
+    batch_max_wait_time: 5min
+    commit_message_template: null
+    queue_branch_merge_method: fast-forward
+    disallow_checks_interruption_from_queues:
+      - default
+
+pull_request_rules:
+  - name: automatic merge
+    conditions:
+      - base=main
+      - check-success=semantic-pull-request
+      - label!=manual merge
     actions:
       queue:
-        method: rebase
-        commit_message_template: null
-        name: lowprio
-
-  - name: dependabot conflict fixer
-    conditions:
-      - author=dependabot[bot]
-      - conflict
-    actions:
-      comment:
-        bot_account: mergify-ci-bot
-        message: "@dependabot recreate"
-
-  - name: warn on conflicts
-    conditions:
-      - conflict
-      - -closed
-    actions:
-      comment:
-        message: "@{{author}} this pull request is now in conflict 😩"
-      label:
-        add:
-          - conflict
-  - name: remove conflict label if not needed
-    conditions:
-      - -conflict
-    actions:
-      label:
-        remove:
-          - conflict
