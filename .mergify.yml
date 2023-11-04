@@ -14,7 +14,8 @@ shared:
     - check-success=tox (3.9, py39)
     - check-success=tox (3.10, py310)
     - check-success=tox (3.11, py311)
-    - check-success=tox (3.11, pep8)
+    - check-success=tox (3.12, py312)
+    - check-success=tox (3.12, pep8)
 
 queue_rules:
   - name: default
