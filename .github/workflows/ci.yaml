@@ -19,6 +19,8 @@ jobs:
             target: "py310"
           - python-version: "3.11"
             target: "py311"
+          - python-version: "3.12"
+            target: "py312"
           - python-version: "3.11"
             target: "pep8"
     steps:

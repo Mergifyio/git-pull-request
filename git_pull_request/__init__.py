@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import argparse
-import distutils.util
 import glob
 import itertools
 import logging
@@ -144,7 +143,12 @@ def git_config_add_argument(parser, option, *args, **kwargs):
         default = False
     default = git_get_config(option[2:], default)
     if isboolean and isinstance(default, str):
-        default = distutils.util.strtobool(default)
+        if default in ("y", "yes", "t", "true", "on", "1"):
+            default = True
+        elif default in ("n", "no", "f", "false", "off", "0"):
+            default = False
+        else:
+            raise ValueError("{default} is not a valid boolean value")
     kwargs["default"] = default
     return parser.add_argument(option, *args, **kwargs)
 
