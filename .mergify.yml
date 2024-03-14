@@ -22,7 +22,7 @@ queue_rules:
     <<: *DefaultQueueOptions
     queue_conditions:
       - and: *CheckRuns
-      - check-success=semantic-pull-request
+      - "check-success=Rule: Conventional Commit (post_check)"
       - or:
           - "#approved-reviews-by>=1"
           - label=no-review-needed
@@ -54,7 +54,7 @@ pull_request_rules:
   - name: automatic merge
     conditions:
       - base=main
-      - check-success=semantic-pull-request
+      - "check-success=Rule: Conventional Commit (post_check)"
       - label!=manual merge
     actions:
       queue:
